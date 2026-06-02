@@ -40,6 +40,13 @@
       </div>
     </div>
     <div class="card" style="margin-top:24px;">
+      <h3 style="margin-bottom:18px;font-size:1.1rem;">🟢 Online játékosok</h3>
+      <ul class="leaderboard" id="online-players">
+        <li style="color:var(--muted);padding:12px 16px;">Betöltés...</li>
+      </ul>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
       <h3 style="margin-bottom:18px;font-size:1.1rem;">🏆 Toplista</h3>
       <ul class="leaderboard" id="leaderboard-home"></ul>
     </div>
@@ -206,6 +213,32 @@ async function doRegister() {
   }
 }
 
+function loadOnlinePlayers() {
+  db.collection('presence').onSnapshot(snap => {
+    const el = document.getElementById('online-players');
+    if (!el) return;
+    if (snap.empty) {
+      el.innerHTML = '<li style="color:var(--muted);padding:12px 16px;">Jelenleg senki sem játszik.</li>';
+      return;
+    }
+    const mySession = getSession();
+    let html = '';
+    snap.forEach(d => {
+      const u = d.data();
+      const isMe = u.name === mySession;
+      html += '<li>' +
+        '<span style="color:var(--green);font-size:1rem;min-width:14px;">●</span>' +
+        '<span class="lb-name">' +
+          '<a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a>' +
+          (isMe ? '<span style="background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;">Te</span>' : '') +
+        '</span>' +
+        '<span style="color:var(--muted);font-size:.82rem;">🎮 Játszik</span>' +
+      '</li>';
+    });
+    el.innerHTML = html;
+  });
+}
+
 function doLogout() { clearSession(); location.reload(); }
 
 async function loadLeaderboard() {
@@ -280,6 +313,7 @@ async function init() {
         document.getElementById('my-profile-link').href = 'profile.html?player=' + encodeURIComponent(u.name);
         document.getElementById('nav-logout').style.display = 'inline';
         await loadLeaderboard();
+        loadOnlinePlayers();
         return;
       }
     } catch(e) {}
