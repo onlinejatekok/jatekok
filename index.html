@@ -13,6 +13,7 @@
   <nav class="nav-links">
     <a href="index.html">Főoldal</a>
     <a href="leaderboard.html">🏆 Ranglista</a>
+    <span id="online-count" style="color:var(--green);font-size:.85rem;font-weight:600;"></span>
     <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙️ Beállítások</button>
     <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
     <a href="profile.html" id="nav-profile" style="display:none;">Profilom</a>
@@ -216,8 +217,17 @@ async function doRegister() {
 function loadOnlinePlayers() {
   db.collection('presence').onSnapshot(snap => {
     const el = document.getElementById('online-players');
+    const countEl = document.getElementById('online-count');
+
+    const count = snap.size;
+
+    // Fejléc számláló frissítése
+    if (countEl) {
+      countEl.textContent = count > 0 ? '🟢 ' + count + ' online' : '';
+    }
+
     if (!el) return;
-    if (snap.empty) {
+    if (count === 0) {
       el.innerHTML = '<li style="color:var(--muted);padding:12px 16px;">Jelenleg senki sem játszik.</li>';
       return;
     }
@@ -227,7 +237,7 @@ function loadOnlinePlayers() {
       const u = d.data();
       const isMe = u.name === mySession;
       html += '<li>' +
-        '<span style="color:var(--green);font-size:1rem;min-width:14px;">●</span>' +
+        '<span style="color:var(--green);font-size:1rem;min-width:14px;margin-right:4px;">●</span>' +
         '<span class="lb-name">' +
           '<a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a>' +
           (isMe ? '<span style="background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;">Te</span>' : '') +
@@ -322,6 +332,7 @@ async function init() {
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'block';
+  loadOnlinePlayers(); // vendégként is mutatja az online játékosokat
 }
 
 document.addEventListener('keydown', e => {
