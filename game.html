@@ -254,7 +254,7 @@ function useHint(n) {
     document.getElementById('hint3-btn').disabled = true;
     roundPoints = Math.max(0, roundPoints - 100);
     const img = document.getElementById('puzzle-img');
-    img.style.filter = 'blur(2px) brightness(0.95)';
+    img.style.filter = 'blur(8px) brightness(0.8)';
     ht.textContent = '🔍 A kép most élesebb — nézd meg jobban!';
     ht.className = 'hint-text show';
   }

@@ -173,7 +173,7 @@ a:hover { text-decoration: underline; }
   width: 100%; height: 100%; object-fit: cover;
   transition: filter .4s ease;
 }
-.image-box img.blurred { filter: blur(10px) brightness(0.85); }
+.image-box img.blurred { filter: blur(22px) brightness(0.6) saturate(0.8); }
 .image-box .blur-label {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   color: #fff; font-size: 1.1rem; font-weight: 700; text-align: center;
