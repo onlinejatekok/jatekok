@@ -219,22 +219,22 @@ function loadOnlinePlayers() {
     renderOnline(snap);
   });
 
-  // Percenként újrarendereli — kiszűri a lejárt rekordokat frissítés nélkül
+  // 20 másodpercenként újraellenőrzi — kiszűri a lejárt rekordokat
   setInterval(() => {
     db.collection('presence').get().then(snap => renderOnline(snap));
-  }, 60000);
+  }, 20000);
 }
 
 function renderOnline(snap) {
   const el = document.getElementById('online-players');
   const countEl = document.getElementById('online-count');
   const now = Date.now();
-  const TWO_MIN = 2 * 60 * 1000;
+  const TIMEOUT = 45 * 1000; // 45 másodperc — heartbeat 20mp, tehát 2 kihagyás után offline
 
   const active = [];
   snap.forEach(d => {
     const u = d.data();
-    if ((now - (u.since || 0)) < TWO_MIN) {
+    if ((now - (u.since || 0)) < TIMEOUT) {
       active.push(u);
     } else {
       db.collection('presence').doc(d.id).delete().catch(()=>{});

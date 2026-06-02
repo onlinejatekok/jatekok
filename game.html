@@ -159,7 +159,7 @@ function setOffline() {
   db.collection('presence').doc(username).delete().catch(()=>{});
 }
 
-// Heartbeat — 30mp-enként frissíti az időbélyeget
+// Heartbeat — 20mp-enként frissíti az időbélyeget
 let heartbeatInterval = setInterval(() => {
   if (username) {
     db.collection('presence').doc(username).set({
@@ -168,7 +168,7 @@ let heartbeatInterval = setInterval(() => {
       since: Date.now()
     }).catch(()=>{});
   }
-}, 30000);
+}, 20000);
 
 window.addEventListener('beforeunload', () => { setOffline(); clearInterval(heartbeatInterval); });
 window.addEventListener('pagehide', () => { setOffline(); clearInterval(heartbeatInterval); });
