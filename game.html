@@ -51,6 +51,7 @@
     </div>
 
     <!-- Szóhossz kijelző -->
+    <div style="text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:6px;" id="word-length-info"></div>
     <div class="word-display" id="word-display"></div>
 
     <!-- Tipp gombok -->
@@ -178,6 +179,12 @@ function loadPuzzle() {
   document.getElementById('cat-badge').textContent = CATEGORIES[p.category];
 
   // Szóhossz kijelző
+  const letterCount = p.word.replace(/ /g, '').length;
+  const wordCount = p.word.trim().split(' ').length;
+  document.getElementById('word-length-info').textContent =
+    wordCount > 1
+      ? `${wordCount} szó, összesen ${letterCount} betű`
+      : `${letterCount} betűs szó`;
   buildWordDisplay(p.word, []);
 
   // Tipp gomb reset
@@ -243,11 +250,11 @@ function useHint(n) {
     ht.textContent = '📝 ' + p.hint2;
     ht.className = 'hint-text show';
   } else if (n === 3) {
-    // Kép fókusz: blur csökkentése
+    // Kép fókusz: blur teljes eltávolítása
     document.getElementById('hint3-btn').disabled = true;
     roundPoints = Math.max(0, roundPoints - 100);
     const img = document.getElementById('puzzle-img');
-    img.style.filter = 'blur(6px) brightness(0.85)';
+    img.style.filter = 'blur(2px) brightness(0.95)';
     ht.textContent = '🔍 A kép most élesebb — nézd meg jobban!';
     ht.className = 'hint-text show';
   }
