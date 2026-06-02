@@ -56,9 +56,21 @@
           <div class="stat-label">Lejátszott meccsek</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" style="color:var(--gold);" id="stat-coins">0 🪙</div>
-          <div class="stat-label">Érmék</div>
+          <div class="stat-value" style="color:var(--gold);" id="stat-coins">0 ⭐</div>
+          <div class="stat-label">Csillagok</div>
         </div>
+      </div>
+
+      <!-- XP és rang -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div id="rank-name" style="font-size:1.1rem;font-weight:800;"></div>
+          <div id="rank-xp" style="font-size:.85rem;color:var(--muted);"></div>
+        </div>
+        <div style="background:var(--bg);border-radius:999px;height:12px;overflow:hidden;">
+          <div id="xp-bar" style="height:100%;border-radius:999px;transition:width .6s ease;width:0%;"></div>
+        </div>
+        <div id="rank-next" style="font-size:.78rem;color:var(--muted);margin-top:6px;"></div>
       </div>
 
       <div style="margin-bottom:20px;">
@@ -75,14 +87,14 @@
         <h3 style="margin-bottom:6px;font-size:1rem;">👥 Meghívott barátok</h3>
         <p style="color:var(--muted);font-size:.85rem;">
           Eddig <strong id="referral-count" style="color:var(--accent);">0</strong> barátot hívtál meg —
-          összesen <strong id="referral-earned" style="color:var(--gold);">0 🪙</strong> érmét szereztél.
+          összesen <strong id="referral-earned" style="color:var(--gold);">0 ⭐</strong> csillagot szereztél.
         </p>
       </div>
 
       <div class="share-box" id="share-box" style="display:none;">
         <h3>🔗 Barát meghívása</h3>
         <p style="color:var(--muted);font-size:.85rem;margin-bottom:4px;">Küldd el ezt a linket!</p>
-        <p style="color:var(--gold);font-size:.82rem;margin-bottom:10px;">🪙 Aki regisztrál a te linkeden: ő kap <strong>10 érmét</strong>, te is kapsz <strong>10 érmét</strong>.</p>
+        <p style="color:var(--gold);font-size:.82rem;margin-bottom:10px;">⭐ Aki regisztrál a te linkeden: ő kap <strong>10 csillagot</strong>, te is kapsz <strong>10 csillagot</strong>.</p>
         <div class="share-url-row">
           <input type="text" id="share-url" readonly />
           <button class="btn btn-sm btn-primary" onclick="copyShareUrl()">Másolás</button>
@@ -102,6 +114,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="firebase.js"></script>
+<script src="ranks.js"></script>
 <script>
 const SESSION_KEY = 'doorpuzzle_session';
 const loggedInName = localStorage.getItem(SESSION_KEY);
@@ -159,14 +172,28 @@ async function init() {
     document.getElementById('stat-best-score').textContent = u.bestScore || 0;
     document.getElementById('stat-best-level').textContent = u.bestLevel || 0;
     document.getElementById('stat-games').textContent = u.gamesPlayed || 0;
-    document.getElementById('stat-coins').textContent = (u.coins||0) + ' 🪙';
+    document.getElementById('stat-coins').textContent = (u.coins||0) + ' ⭐';
+
+    // XP és rang
+    const xp = u.xp || 0;
+    const prog = getXpProgress(xp);
+    const rank = prog.current;
+    document.getElementById('rank-name').innerHTML =
+      '<span style="color:' + rank.color + ';">' + rank.icon + ' ' + rank.name + '</span>';
+    document.getElementById('rank-xp').textContent = xp + ' XP';
+    document.getElementById('xp-bar').style.width = prog.pct + '%';
+    document.getElementById('xp-bar').style.background =
+      'linear-gradient(90deg, ' + rank.color + ', var(--accent2))';
+    document.getElementById('rank-next').textContent = prog.next
+      ? 'Következő rang: ' + prog.next.icon + ' ' + prog.next.name + ' — még ' + (prog.needed - prog.have) + ' XP kell'
+      : '🌟 Elérted a maximális rangot!';
 
     const pct = Math.min(100, Math.round(((u.bestLevel||0)/10)*100));
     document.getElementById('progress-bar').style.width = pct + '%';
     document.getElementById('progress-label').textContent = (u.bestLevel||0) + ' / 10';
 
     document.getElementById('referral-count').textContent = u.referralCount || 0;
-    document.getElementById('referral-earned').textContent = ((u.referralCount||0)*10) + ' 🪙';
+    document.getElementById('referral-earned').textContent = ((u.referralCount||0)*10) + ' ⭐';
 
     if (loggedInName === u.name) {
       document.getElementById('share-box').style.display = 'block';
@@ -194,7 +221,7 @@ async function loadLeaderboard(highlightName) {
       <span class="lb-rank ${ranks[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</span>
       <span class="lb-name"><a href="profile.html?player=${encodeURIComponent(u.name)}">${u.name}${isMe?' 👈':''}</a></span>
       <span style="display:flex;gap:10px;align-items:center;">
-        <span style="color:var(--gold);font-size:.8rem;">${u.coins||0} 🪙</span>
+        <span style="color:var(--gold);font-size:.8rem;">${u.coins||0} ⭐</span>
         <span class="lb-score">${u.bestScore||0} pont</span>
       </span>
     </li>`;

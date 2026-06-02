@@ -65,7 +65,7 @@
     <div class="filters">
       <button class="filter-btn active" onclick="setSort('score',this)">⭐ Legjobb pontszám</button>
       <button class="filter-btn" onclick="setSort('level',this)">🚪 Legjobb szint</button>
-      <button class="filter-btn" onclick="setSort('coins',this)">🪙 Legtöbb érme</button>
+      <button class="filter-btn" onclick="setSort('coins',this)">⭐ Legtöbb csillag</button>
       <button class="filter-btn" onclick="setSort('games',this)">🎮 Legtöbb meccs</button>
       <button class="filter-btn" onclick="setSort('newest',this)">🆕 Legújabb</button>
     </div>
@@ -77,7 +77,7 @@
             <th>Játékos</th>
             <th class="right">Legjobb pont</th>
             <th class="right">Szint</th>
-            <th class="right">🪙 Érmék</th>
+            <th class="right">⭐ Csillag</th>
             <th class="right">Meccsek</th>
           </tr>
         </thead>
@@ -153,7 +153,7 @@ function renderStats() {
     '<div class="stat"><div class="val">'+total+'</div><div class="lbl">Regisztrált játékos</div></div>' +
     '<div class="stat"><div class="val">'+totalGames+'</div><div class="lbl">Összes meccs</div></div>' +
     '<div class="stat"><div class="val" style="color:var(--gold);">'+best+'</div><div class="lbl">Legjobb pontszám</div></div>' +
-    '<div class="stat"><div class="val" style="color:var(--gold);">'+totalCoins+' 🪙</div><div class="lbl">Összes érme</div></div>';
+    '<div class="stat"><div class="val" style="color:var(--gold);">'+totalCoins+' ⭐</div><div class="lbl">Összes csillag</div></div>';
 }
 
 function renderTable() {
@@ -178,7 +178,7 @@ function renderTable() {
       '</div></td>' +
       '<td class="right"><span class="pill pill-gold">'+(u.bestScore||0)+' pont</span></td>' +
       '<td class="right"><span class="pill '+((u.bestLevel||0)>=10?'pill-green':'pill-muted')+'">'+(u.bestLevel||0)+' / 10</span></td>' +
-      '<td class="right" style="color:var(--gold);font-weight:700;">'+(u.coins||0)+' 🪙</td>' +
+      '<td class="right" style="color:var(--gold);font-weight:700;">'+(u.coins||0)+' ⭐</td>' +
       '<td class="right" style="color:var(--muted);">'+(u.gamesPlayed||0)+'</td>' +
     '</tr>';
   }).join('');

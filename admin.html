@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css?v=7" />
+  <style>
+    .admin-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+    .admin-header h1 { font-size: 1.6rem; font-weight: 900; }
+
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    @media(max-width:600px){ .admin-grid { grid-template-columns: 1fr; } }
+
+    .admin-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+    .admin-card h3 { font-size: 1rem; margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+    .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .val { font-weight: 700; color: var(--accent); }
+
+    .user-table { width: 100%; border-collapse: collapse; }
+    .user-table th { text-align: left; padding: 8px 12px; font-size: .78rem; color: var(--muted); text-transform: uppercase; border-bottom: 2px solid var(--border); }
+    .user-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: .88rem; vertical-align: middle; }
+    .user-table tr:hover td { background: var(--bg2); }
+    .user-table tr:last-child td { border-bottom: none; }
+
+    .rank-badge-sm { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--bg2); }
+
+    .action-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 4px 10px; font-size: .78rem; cursor: pointer; transition: all .15s; font-family: inherit; }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+    .xp-input { width: 70px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 4px 8px; font-size: .85rem; outline: none; text-align: center; }
+    .xp-input:focus { border-color: var(--accent); }
+
+    .login-box { max-width: 380px; margin: 80px auto; }
+    .badge-new { background: var(--accent); color: #fff; font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-left: 6px; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--card); border: 1px solid var(--green); color: var(--green); padding: 12px 20px; border-radius: 10px; font-weight: 600; z-index: 999; animation: fadeIn .3s ease; display: none; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">⚙️ Admin Panel</div>
+  <nav class="nav-links">
+    <a href="index.html">← Főoldal</a>
+    <a href="leaderboard.html">🏆 Ranglista</a>
+    <button id="admin-logout-btn" style="display:none;" onclick="adminLogout()">Kilépés</button>
+  </nav>
+</header>
+
+<!-- Admin login -->
+<div id="admin-login" class="admin-wrap">
+  <div class="login-box card">
+    <div class="center" style="margin-bottom:24px;">
+      <div style="font-size:2.5rem;margin-bottom:8px;">⚙️</div>
+      <h2 style="font-size:1.4rem;">Admin belépés</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-top:4px;">Csak jogosult felhasználók számára</p>
+    </div>
+    <div class="form-group">
+      <label>Admin jelszó</label>
+      <input type="password" id="admin-pass-input" placeholder="••••••••" autocomplete="off" />
+    </div>
+    <div class="error-msg" id="admin-login-err"></div>
+    <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="adminLogin()">Belépés</button>
+  </div>
+</div>
+
+<!-- Admin panel -->
+<div id="admin-panel" style="display:none;" class="admin-wrap">
+
+  <div class="admin-header">
+    <h1>⚙️ Admin Panel</h1>
+    <span style="color:var(--muted);font-size:.88rem;">Bejelentkezve mint: <strong style="color:var(--accent);">Admin</strong></span>
+  </div>
+
+  <!-- Összesítők -->
+  <div class="admin-grid" style="margin-bottom:20px;">
+    <div class="admin-card">
+      <h3>📊 Statisztikák</h3>
+      <div id="admin-stats"></div>
+    </div>
+    <div class="admin-card">
+      <h3>🏆 Rang kiosztás</h3>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">Adj XP-t egy felhasználónak manuálisan.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <select id="xp-user-select" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-size:.88rem;outline:none;min-width:120px;"></select>
+        <input type="number" id="xp-amount" class="xp-input" value="10" min="1" max="999" />
+        <button class="btn btn-primary btn-sm" onclick="giveXP()">+XP</button>
+      </div>
+      <div id="xp-feedback" style="font-size:.82rem;margin-top:8px;min-height:18px;color:var(--green);"></div>
+    </div>
+  </div>
+
+  <!-- Felhasználók táblázat -->
+  <div class="admin-card">
+    <h3>👥 Felhasználók</h3>
+    <div style="overflow-x:auto;">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Név</th>
+            <th>Rang</th>
+            <th>XP</th>
+            <th>Pontszám</th>
+            <th>⭐ Csillag</th>
+            <th>Meccsek</th>
+            <th>Regisztrált</th>
+            <th>Műveletek</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
+<script src="ranks.js"></script>
+<script>
+// ── Admin jelszó — ezt csak te tudod ──
+const ADMIN_PASSWORD = 'melcso_admin_2024';
+const ADMIN_KEY = 'hangman_admin_session';
+
+function adminLogin() {
+  const pass = document.getElementById('admin-pass-input').value;
+  if (pass === ADMIN_PASSWORD) {
+    sessionStorage.setItem(ADMIN_KEY, '1');
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    document.getElementById('admin-logout-btn').style.display = 'inline';
+    loadPanel();
+  } else {
+    document.getElementById('admin-login-err').textContent = 'Hibás jelszó!';
+  }
+}
+
+function adminLogout() {
+  sessionStorage.removeItem(ADMIN_KEY);
+  location.reload();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('admin-login').style.display !== 'none') adminLogin();
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+let allUsers = [];
+
+async function loadPanel() {
+  const snap = await db.collection('users').get();
+  allUsers = [];
+  snap.forEach(d => allUsers.push(d.data()));
+  renderStats();
+  renderUsers();
+  fillUserSelect();
+}
+
+function renderStats() {
+  const total = allUsers.length;
+  const totalGames = allUsers.reduce((s,u) => s+(u.gamesPlayed||0), 0);
+  const totalXP = allUsers.reduce((s,u) => s+(u.xp||0), 0);
+  const totalCoins = allUsers.reduce((s,u) => s+(u.coins||0), 0);
+  const maxScore = allUsers.reduce((m,u) => Math.max(m,u.bestScore||0), 0);
+
+  document.getElementById('admin-stats').innerHTML = [
+    ['👥 Felhasználók', total],
+    ['🎮 Összes meccs', totalGames],
+    ['⚡ Összes XP', totalXP],
+    ['⭐ Összes csillag', totalCoins],
+    ['🏆 Legjobb pont', maxScore],
+  ].map(([l,v]) => `<div class="stat-row"><span>${l}</span><span class="val">${v}</span></div>`).join('');
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('users-tbody');
+  const sorted = [...allUsers].sort((a,b) => (b.xp||0)-(a.xp||0));
+
+  tbody.innerHTML = sorted.map(u => {
+    const rank = getRank(u.xp||0);
+    const prog = getXpProgress(u.xp||0);
+    return `<tr>
+      <td><strong>${u.name}</strong></td>
+      <td>
+        <span class="rank-badge-sm" style="color:${rank.color};">${rank.icon} ${rank.name}</span>
+      </td>
+      <td>
+        <div style="font-weight:700;">${u.xp||0} XP</div>
+        <div style="font-size:.72rem;color:var(--muted);">${prog.next ? prog.have+'/'+prog.needed+' → '+prog.next.name : 'MAX'}</div>
+      </td>
+      <td>${u.bestScore||0}</td>
+      <td>${u.coins||0} ⭐</td>
+      <td>${u.gamesPlayed||0}</td>
+      <td style="color:var(--muted);font-size:.8rem;">${formatDate(u.created)}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="action-btn" onclick="quickXP('${u.name}', 10)">+10 XP</button>
+        <button class="action-btn" onclick="quickXP('${u.name}', -10)">-10 XP</button>
+        <button class="action-btn danger" onclick="resetUser('${u.name}')">Reset</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function fillUserSelect() {
+  const sel = document.getElementById('xp-user-select');
+  sel.innerHTML = allUsers.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+}
+
+async function giveXP() {
+  const name = document.getElementById('xp-user-select').value;
+  const amount = parseInt(document.getElementById('xp-amount').value) || 0;
+  if (!name || amount === 0) return;
+  await applyXP(name, amount);
+  document.getElementById('xp-feedback').textContent = `✅ ${name} kapott ${amount} XP-t!`;
+  setTimeout(() => { document.getElementById('xp-feedback').textContent = ''; }, 2000);
+}
+
+async function quickXP(name, amount) {
+  await applyXP(name, amount);
+}
+
+async function applyXP(name, amount) {
+  const ref = db.collection('users').doc(name);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const u = snap.data();
+  const oldXP = u.xp || 0;
+  const newXP = Math.max(0, oldXP + amount);
+  const oldRank = getRank(oldXP).name;
+  const newRank = getRank(newXP).name;
+  await ref.update({ xp: newXP });
+
+  // Lokális frissítés
+  const idx = allUsers.findIndex(x => x.name === name);
+  if (idx >= 0) allUsers[idx].xp = newXP;
+  renderUsers();
+  renderStats();
+
+  if (oldRank !== newRank) {
+    showToast(`🎉 ${name} rangot lépett: ${oldRank} → ${newRank}!`);
+  } else {
+    showToast(`✅ ${name}: ${oldXP} → ${newXP} XP`);
+  }
+}
+
+async function resetUser(name) {
+  if (!confirm(`Biztosan reseteled ${name} XP-jét 0-ra?`)) return;
+  await db.collection('users').doc(name).update({ xp: 0 });
+  const idx = allUsers.findIndex(x => x.name === name);
+  if (idx >= 0) allUsers[idx].xp = 0;
+  renderUsers();
+  showToast(`🔄 ${name} XP resetelve.`);
+}
+
+// Belépés ellenőrzés
+if (sessionStorage.getItem(ADMIN_KEY) === '1') {
+  document.getElementById('admin-login').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+  document.getElementById('admin-logout-btn').style.display = 'inline';
+  loadPanel();
+}
+</script>
+</body>
+</html>

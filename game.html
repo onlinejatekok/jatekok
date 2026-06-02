@@ -33,37 +33,32 @@
   <div class="hud">
     <div class="lives-bar" id="lives-bar"></div>
     <div class="cat-label">Kategória: <strong id="cat-label-text"></strong></div>
-    <div class="score-display">⭐ <span id="score-display">0</span></div>
+    <div id="rank-display" style="font-size:.85rem;"></div>
   </div>
 
   <div class="game-area">
     <!-- Akasztófa rajz -->
     <div class="hangman-box">
       <svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">
-        <!-- Alap szerkezet — mindig látható -->
         <line class="hm-base" x1="10" y1="190" x2="150" y2="190"/>
         <line class="hm-pole" x1="40" y1="190" x2="40" y2="10"/>
         <line class="hm-top"  x1="40" y1="10"  x2="110" y2="10"/>
         <line class="hm-rope" x1="110" y1="10"  x2="110" y2="35"/>
-        <!-- Testrészek — fokozatosan jelennek meg -->
-        <circle class="hm-part" id="hm-head" cx="110" cy="50" r="16" class="hm-head hm-part"/>
-        <line   class="hm-part" id="hm-body"  x1="110" y1="66" x2="110" y2="120" class="hm-body hm-part"/>
-        <line   class="hm-part" id="hm-arm-l" x1="110" y1="80" x2="80"  y2="105" class="hm-arm-l hm-part"/>
-        <line   class="hm-part" id="hm-arm-r" x1="110" y1="80" x2="140" y2="105" class="hm-arm-r hm-part"/>
-        <line   class="hm-part" id="hm-leg-l" x1="110" y1="120" x2="85"  y2="155" class="hm-leg-l hm-part"/>
-        <line   class="hm-part" id="hm-leg-r" x1="110" y1="120" x2="135" y2="155" class="hm-leg-r hm-part"/>
+        <circle id="hm-head"  cx="110" cy="50" r="16" stroke="#fc5c5c" stroke-width="3" fill="none" class="hm-part"/>
+        <line   id="hm-body"  x1="110" y1="66" x2="110" y2="120" stroke="#fc5c5c" stroke-width="3" stroke-linecap="round" class="hm-part"/>
+        <line   id="hm-arm-l" x1="110" y1="80" x2="80"  y2="105" stroke="#fc5c5c" stroke-width="3" stroke-linecap="round" class="hm-part"/>
+        <line   id="hm-arm-r" x1="110" y1="80" x2="140" y2="105" stroke="#fc5c5c" stroke-width="3" stroke-linecap="round" class="hm-part"/>
+        <line   id="hm-leg-l" x1="110" y1="120" x2="85"  y2="155" stroke="#fc5c5c" stroke-width="3" stroke-linecap="round" class="hm-part"/>
+        <line   id="hm-leg-r" x1="110" y1="120" x2="135" y2="155" stroke="#fc5c5c" stroke-width="3" stroke-linecap="round" class="hm-part"/>
       </svg>
     </div>
 
     <!-- Jobb panel -->
     <div class="right-panel">
-      <!-- Tipp -->
-      <div class="hint-box" id="hint-box">
+      <div class="hint-box">
         💡 Tipp: <strong id="hint-text">—</strong>
       </div>
-      <!-- Szó kijelző -->
       <div class="word-display" id="word-display"></div>
-      <!-- Visszajelzés -->
       <div class="feedback-msg" id="feedback-msg"></div>
     </div>
   </div>
@@ -79,7 +74,8 @@
     <div class="big-icon" id="res-icon"></div>
     <h2 id="res-title"></h2>
     <div class="res-word" id="res-word"></div>
-    <div class="res-score" id="res-score"></div>
+    <div class="res-score" id="res-xp" style="font-size:1.5rem;color:var(--accent);font-weight:800;margin:10px 0;"></div>
+    <div id="res-rank-up" style="color:var(--gold);font-size:1rem;font-weight:700;min-height:24px;"></div>
     <div class="res-actions">
       <button class="btn btn-primary" onclick="nextWord()">▶ Következő szó</button>
       <button class="btn btn-outline" onclick="goToCatScreen()">🔄 Kategória</button>
@@ -93,6 +89,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="firebase.js?v=7"></script>
 <script src="data.js?v=7"></script>
+<script src="ranks.js"></script>
 <script>
 const SESSION_KEY = 'doorpuzzle_session';
 const username = localStorage.getItem(SESSION_KEY);
@@ -105,13 +102,9 @@ document.getElementById('res-profile-link').href = 'profile.html?player=' + enco
 
 function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
 
-// Magyar ABC
 const HU_ABC = ['A','Á','B','C','CS','D','DZ','E','É','F','G','GY','H','I','Í','J','K','L','LY','M','N','NY','O','Ó','Ö','Ő','P','R','S','SZ','T','TY','U','Ú','Ü','Ű','V','Z','ZS'];
-
-// Testrészek sorrendben
 const HM_PARTS = ['hm-head','hm-body','hm-arm-l','hm-arm-r','hm-leg-l','hm-leg-r'];
 
-// Állapot
 let currentCat = null;
 let catWords = [];
 let wordIndex = 0;
@@ -119,21 +112,20 @@ let currentWord = '';
 let currentHint = '';
 let guessedLetters = [];
 let wrongCount = 0;
-let score = 0;
-let wordScore = 0;
+let sessionXP = 0; // ebben a játékmenetben szerzett XP
 
-// ── Kategória képernyő ──
 const CAT_ICONS = { allatok:'🐾', etelek:'🍽️', varosok:'🏙️', sport:'⚽', termeszet:'🌿', targyak:'🔧' };
 
+// ── Kategória képernyő ──
 function buildCatScreen() {
   const grid = document.getElementById('cat-grid');
   grid.innerHTML = Object.entries(CATEGORIES).map(([key, label]) => {
     const count = WORDS[key] ? WORDS[key].length : 0;
-    return `<button class="cat-btn" onclick="startCategory('${key}')">
-      <div class="ci">${CAT_ICONS[key]||'🎯'}</div>
-      <div class="cn">${label}</div>
-      <div class="cc">${count} szó</div>
-    </button>`;
+    return '<button class="cat-btn" onclick="startCategory(\'' + key + '\')">' +
+      '<div class="ci">' + (CAT_ICONS[key]||'🎯') + '</div>' +
+      '<div class="cn">' + label + '</div>' +
+      '<div class="cc">' + count + ' szó</div>' +
+      '</button>';
   }).join('');
 }
 
@@ -141,7 +133,7 @@ function startCategory(cat) {
   currentCat = cat;
   catWords = [...WORDS[cat]].sort(() => Math.random() - 0.5);
   wordIndex = 0;
-  score = 0;
+  sessionXP = 0;
   document.getElementById('cat-screen').style.display = 'none';
   document.getElementById('game-screen').style.display = 'block';
   document.getElementById('cat-label-text').textContent = CATEGORIES[cat];
@@ -162,7 +154,6 @@ function loadWord() {
   currentHint = entry.hint;
   guessedLetters = [];
   wrongCount = 0;
-  wordScore = 300;
 
   document.getElementById('hint-text').textContent = currentHint;
   document.getElementById('feedback-msg').className = 'feedback-msg';
@@ -172,7 +163,6 @@ function loadWord() {
   renderLives();
   renderHangman();
   buildABC();
-  renderScore();
 }
 
 // ── Szó kijelző ──
@@ -181,7 +171,7 @@ function renderWord() {
   container.innerHTML = currentWord.split('').map(ch => {
     if (ch === ' ') return '<div class="letter-slot space"></div>';
     const shown = guessedLetters.includes(ch);
-    return `<div class="letter-slot${shown?' revealed':''}">${shown ? ch : ''}</div>`;
+    return '<div class="letter-slot' + (shown ? ' revealed' : '') + '">' + (shown ? ch : '') + '</div>';
   }).join('');
 }
 
@@ -190,7 +180,7 @@ function renderLives() {
   const bar = document.getElementById('lives-bar');
   let html = '';
   for (let i = 0; i < MAX_WRONG; i++) {
-    html += `<span>${i < (MAX_WRONG - wrongCount) ? '❤️' : '🖤'}</span>`;
+    html += '<span>' + (i < (MAX_WRONG - wrongCount) ? '❤️' : '🖤') + '</span>';
   }
   bar.innerHTML = html;
 }
@@ -210,9 +200,9 @@ function buildABC() {
     const used = guessedLetters.includes(letter);
     const isCorrect = used && currentWord.includes(letter);
     const isWrong = used && !currentWord.includes(letter);
-    return `<button class="letter-btn${isCorrect?' correct':isWrong?' wrong':''}"
-      onclick="guessLetter('${letter}')"
-      ${used ? 'disabled' : ''}>${letter}</button>`;
+    return '<button class="letter-btn' + (isCorrect?' correct':isWrong?' wrong':'') + '"' +
+      ' onclick="guessLetter(\'' + letter + '\')"' +
+      (used ? ' disabled' : '') + '>' + letter + '</button>';
   }).join('');
 }
 
@@ -224,22 +214,23 @@ function guessLetter(letter) {
   const fb = document.getElementById('feedback-msg');
 
   if (currentWord.includes(letter)) {
-    // Helyes betű
+    // +1 XP helyes betűnként
+    const occurrences = currentWord.split('').filter(c => c === letter).length;
+    sessionXP += XP_VALUES.correct_letter * occurrences;
+
     renderWord();
-    fb.textContent = '✅ Helyes betű!';
+    fb.textContent = '+' + (XP_VALUES.correct_letter * occurrences) + ' XP! Helyes betű!';
     fb.className = 'feedback-msg show correct';
 
-    // Megvan az összes betű?
     const allFound = currentWord.split('').every(ch => ch === ' ' || guessedLetters.includes(ch));
     if (allFound) {
-      score += wordScore;
-      renderScore();
+      // +5 XP szó megtalálva, +10 ha hibátlan
+      const bonus = wrongCount === 0 ? XP_VALUES.word_perfect : XP_VALUES.word_solved;
+      sessionXP += bonus;
       setTimeout(() => showResult(true), 600);
     }
   } else {
-    // Helytelen betű
     wrongCount++;
-    wordScore = Math.max(0, wordScore - 40);
     renderLives();
     renderHangman();
 
@@ -253,7 +244,7 @@ function guessLetter(letter) {
     }
   }
 
-  // ABC gombok frissítése
+  // ABC gomb frissítése
   const btn = [...document.querySelectorAll('.letter-btn')].find(b => b.textContent === letter);
   if (btn) {
     btn.disabled = true;
@@ -263,35 +254,51 @@ function guessLetter(letter) {
 
 // ── Eredmény ──
 async function showResult(won) {
-  // Teljes szó megmutatása
   if (!won) {
     guessedLetters = currentWord.split('').filter(c => c !== ' ');
     renderWord();
   }
 
-  // Firebase mentés
+  const xpEarned = won ? sessionXP : 0;
+
   try {
     const ref = db.collection('users').doc(username);
     const snap = await ref.get();
     if (snap.exists) {
       const u = snap.data();
-      const updates = {
+      const oldXP = u.xp || 0;
+      const newXP = oldXP + xpEarned;
+      const oldRank = getRank(oldXP).name;
+      const newRank = getRank(newXP).name;
+
+      await ref.update({
         gamesPlayed: (u.gamesPlayed||0) + 1,
-        totalPoints: (u.totalPoints||0) + score,
         lastPlayed: Date.now(),
-      };
-      if (score > (u.bestScore||0)) updates.bestScore = score;
-      await ref.update(updates);
+        xp: newXP,
+      });
+
+      renderRank(newXP);
+
+      // Rang változás jelzés
+      if (won && oldRank !== newRank) {
+        document.getElementById('res-rank-up').textContent =
+          '🎉 Új rang: ' + getRank(newXP).icon + ' ' + newRank + '!';
+      } else {
+        document.getElementById('res-rank-up').textContent = '';
+      }
     }
   } catch(e) { console.error(e); }
 
-  const overlay = document.getElementById('result-overlay');
-  overlay.style.display = 'flex';
-
+  document.getElementById('result-overlay').style.display = 'flex';
   document.getElementById('res-icon').textContent = won ? '🎉' : '💀';
   document.getElementById('res-title').textContent = won ? 'Megtaláltad!' : 'Sajnos akasztva lettél...';
   document.getElementById('res-word').textContent = 'A szó: ' + currentWord;
-  document.getElementById('res-score').textContent = won ? '+' + wordScore + ' pont' : '+0 pont';
+  document.getElementById('res-xp').textContent = won
+    ? '+' + xpEarned + ' XP' + (wrongCount === 0 ? ' (hibátlan! 🌟)' : '')
+    : 'Nem szereztél XP-t';
+
+  // Session XP reset következő szóhoz
+  sessionXP = 0;
 }
 
 function nextWord() {
@@ -300,21 +307,32 @@ function nextWord() {
   loadWord();
 }
 
-function renderScore() {
-  document.getElementById('score-display').textContent = score;
+function renderRank(xp) {
+  const rank = getRank(xp || 0);
+  const prog = getXpProgress(xp || 0);
+  const el = document.getElementById('rank-display');
+  el.innerHTML =
+    '<span style="color:' + rank.color + ';font-weight:700;">' + rank.icon + ' ' + rank.name + '</span>' +
+    '<span style="color:var(--muted);font-size:.75rem;margin-left:6px;">(' + (xp||0) + ' XP' +
+    (prog.next ? ' / ' + prog.next.min + ')' : ' — MAX)') + '</span>';
 }
 
-// Keyboard support
+async function loadUserXP() {
+  try {
+    const snap = await db.collection('users').doc(username).get();
+    if (snap.exists) renderRank(snap.data().xp || 0);
+  } catch(e) {}
+}
+
 document.addEventListener('keydown', e => {
   if (document.getElementById('game-screen').style.display === 'none') return;
   if (document.getElementById('result-overlay').style.display !== 'none') return;
   const key = e.key.toUpperCase();
-  if (HU_ABC.includes(key) && !guessedLetters.includes(key)) {
-    guessLetter(key);
-  }
+  if (HU_ABC.includes(key) && !guessedLetters.includes(key)) guessLetter(key);
 });
 
 buildCatScreen();
+loadUserXP();
 </script>
 </body>
 </html>
