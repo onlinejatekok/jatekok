@@ -159,8 +159,19 @@ function setOffline() {
   db.collection('presence').doc(username).delete().catch(()=>{});
 }
 
-window.addEventListener('beforeunload', setOffline);
-window.addEventListener('pagehide', setOffline);
+// Heartbeat — 30mp-enként frissíti az időbélyeget
+let heartbeatInterval = setInterval(() => {
+  if (username) {
+    db.collection('presence').doc(username).set({
+      name: username,
+      online: true,
+      since: Date.now()
+    }).catch(()=>{});
+  }
+}, 30000);
+
+window.addEventListener('beforeunload', () => { setOffline(); clearInterval(heartbeatInterval); });
+window.addEventListener('pagehide', () => { setOffline(); clearInterval(heartbeatInterval); });
 setOnline();
 
 const HU_ABC = ['A','Á','B','C','D','E','É','F','G','H','I','Í','J','K','L','M','N','O','Ó','Ö','Ő','P','R','S','T','U','Ú','Ü','Ű','V','Y','Z'];
