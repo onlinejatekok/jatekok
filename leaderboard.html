@@ -129,7 +129,11 @@ function rankBadge(i) {
 function getSorted() {
   const copy = [...allUsers];
   switch(currentSort) {
-    case 'xp':     return copy.sort((a,b)=>(b.xp||0)-(a.xp||0));
+    case 'xp': return copy.sort((a,b) => {
+      const diff = (Number(b.xp)||0) - (Number(a.xp)||0);
+      if (diff !== 0) return diff;
+      return (Number(b.coins)||0) - (Number(a.coins)||0);
+    });
     case 'coins':  return copy.sort((a,b)=>(b.coins||0)-(a.coins||0));
     case 'games':  return copy.sort((a,b)=>(b.gamesPlayed||0)-(a.gamesPlayed||0));
     case 'newest': return copy.sort((a,b)=>(b.created||0)-(a.created||0));
@@ -194,9 +198,18 @@ function renderTable() {
 function init() {
   db.collection('users').onSnapshot(snap => {
     allUsers = [];
-    snap.forEach(d => allUsers.push(d.data()));
-    // Mindig XP szerint rendez frissítéskor
-    allUsers.sort((a,b) => (b.xp||0) - (a.xp||0));
+    snap.forEach(d => {
+      const u = d.data();
+      // Ha nincs xp mező, 0-nak számít
+      if (u.xp === undefined || u.xp === null) u.xp = 0;
+      allUsers.push(u);
+    });
+    // XP szerint csökkenő rendezés
+    allUsers.sort((a,b) => {
+      const diff = (Number(b.xp)||0) - (Number(a.xp)||0);
+      if (diff !== 0) return diff;
+      return (Number(b.coins)||0) - (Number(a.coins)||0);
+    });
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
     renderStats();

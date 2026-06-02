@@ -221,8 +221,12 @@ async function loadLeaderboard() {
       u.xp = Number(u.xp) || 0;
       users.push(u);
     });
-    // XP szerint csökkenő — legtöbb XP = első hely
-    users.sort((a,b) => b.xp - a.xp);
+    // XP szerint csökkenő — egyenlő XP esetén több csillag = előrébb
+    users.sort((a,b) => {
+      const diff = b.xp - a.xp;
+      if (diff !== 0) return diff;
+      return (Number(b.coins)||0) - (Number(a.coins)||0);
+    });
 
     const ranks = ['gold','silver','bronze'];
     let html = '';
