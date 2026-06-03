@@ -4,105 +4,231 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="google-adsense-account" content="ca-pub-6255373288681857">
-  <title>AkasztófaOnline  Találd ki a szót!</title>
+  <title>AkasztófaOnline – Főmenü</title>
   <link rel="stylesheet" href="style.css?v=5" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6255373288681857" crossorigin="anonymous"></script>
+  <style>
+    /* ── Főmenü egyedi stílusok ── */
+    .home-hero {
+      text-align: center;
+      padding: 40px 20px 28px;
+    }
+    .home-hero .site-title {
+      font-size: 2.4rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+    .home-hero .site-sub {
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 20px;
+    }
+    .user-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-size: .9rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .user-bar .stat { color: var(--muted); }
+    .user-bar .stat strong { color: var(--text); }
+
+    /* Játék kártyák */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .game-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+      transition: all .22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .game-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity .22s;
+      border-radius: calc(var(--radius) - 2px);
+    }
+    .game-card.accent::before  { background: rgba(124,92,252,0.07); }
+    .game-card.accent2::before { background: rgba(196,92,252,0.07); }
+    .game-card.gold::before    { background: rgba(245,200,66,0.07); }
+    .game-card:hover::before   { opacity: 1; }
+    .game-card:hover           { transform: translateY(-5px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); text-decoration: none; }
+    .game-card.accent:hover    { border-color: var(--accent); }
+    .game-card.accent2:hover   { border-color: var(--accent2); }
+    .game-card.gold:hover      { border-color: var(--gold); }
+
+    .game-card .gc-icon {
+      font-size: 2.4rem;
+      font-weight: 900;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+    .game-card.accent  .gc-icon { color: var(--accent); }
+    .game-card.accent2 .gc-icon { color: var(--accent2); }
+    .game-card.gold    .gc-icon { color: var(--gold); }
+
+    .game-card .gc-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    .game-card .gc-desc {
+      font-size: .78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Kétoszlopos alsó rész */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Online pont */
+    .online-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: 5px;
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    /* Mobil */
+    @media (max-width: 600px) {
+      .games-grid { grid-template-columns: 1fr; gap: 12px; }
+      .bottom-grid { grid-template-columns: 1fr; }
+      .home-hero .site-title { font-size: 1.8rem; }
+      .user-bar { padding: 8px 16px; gap: 10px; font-size: .82rem; }
+    }
+    @media (min-width: 601px) and (max-width: 800px) {
+      .games-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
 </head>
 <body>
 
 <header class="site-header">
   <div class="logo">[ AkasztófaOnline ]</div>
   <nav class="nav-links">
-    <a href="index.html">Főoldal</a>
-    <a href="leaderboard.html">🏆 Ranglista</a>
-    <span id="online-count" style="color:var(--green);font-size:.85rem;font-weight:600;"></span>
-    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙️ Beállítások</button>
-    <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
-    <a href="profile.html" id="nav-profile" style="display:none;">Profilom</a>
-    <button id="nav-logout" style="display:none;" onclick="doLogout()">Kilépés</button>
+    <span id="nav-user" style="color:var(--muted);font-size:.9rem;font-weight:600;"></span>
+    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;" title="Beállítások">⚙ Beállítások</button>
+    <button id="nav-logout" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;" onclick="doLogout()">Kilépés</button>
   </nav>
 </header>
 
 <main class="container">
 
-  <div id="loading" class="center" style="margin-top:80px;color:var(--muted);">
-    <div style="font-size:2.5rem;margin-bottom:12px;">⏳</div>
+  <!-- Betöltés -->
+  <div id="loading" class="center" style="margin-top:100px;color:var(--muted);">
+    <div style="font-size:2rem;margin-bottom:10px;color:var(--accent);">[ ]</div>
     <div>Betöltés...</div>
   </div>
 
-  <!-- Bejelentkezett nézet -->
+  <!-- ══ BEJELENTKEZETT NÉZET ══ -->
   <div id="welcome-screen" style="display:none;" class="fadeIn">
-    <div class="card center" style="margin-top:40px;">
-      <div style="font-size:3.5rem;margin-bottom:12px;">🪢</div>
-      <h1 style="font-size:2rem;margin-bottom:8px;">Üdv újra, <span id="welcome-name" style="color:var(--accent);"></span>!</h1>
-      <p style="color:var(--muted);margin-bottom:6px;">Készen állsz a kihívásra?</p>
-      <p style="margin-bottom:24px;font-size:1.1rem;">⭐ <span id="welcome-coins" style="color:var(--gold);font-weight:700;">0</span> csillagod van &nbsp;|&nbsp; <span id="welcome-xp" style="color:var(--accent);font-weight:700;">0 XP</span></p>
-    </div>
 
-    <!-- Játékok szekció -->
-    <div class="card" style="margin-top:20px;">
-      <h3 style="margin-bottom:18px;font-size:1.2rem;font-weight:800;">🎮 Játékok</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;">
-
-        <a href="game.html" style="text-decoration:none;">
-          <div style="background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);padding:22px 16px;text-align:center;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-            <div style="font-size:2rem;margin-bottom:8px;color:var(--accent);font-weight:900;">A_</div>
-            <div style="font-weight:800;font-size:1rem;color:var(--text);">Akasztófa</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:4px;">Találd ki a szót betűnként</div>
-          </div>
-        </a>
-
-        <a href="szokap.html" style="text-decoration:none;">
-          <div style="background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);padding:22px 16px;text-align:center;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent2)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-            <div style="font-size:2rem;margin-bottom:8px;color:var(--accent2);font-weight:900;">A=B</div>
-            <div style="font-weight:800;font-size:1rem;color:var(--text);">Szókapcsolat</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:4px;">Mi a közös a 4 szóban?</div>
-          </div>
-        </a>
-
-        <a href="wheel.html" style="text-decoration:none;">
-          <div style="background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);padding:22px 16px;text-align:center;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='var(--gold)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-            <div style="font-size:2rem;margin-bottom:8px;color:var(--gold);font-weight:900;">★</div>
-            <div style="font-weight:800;font-size:1rem;color:var(--text);">Szerencsekerék</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:4px;">Napi csillag nyeremény</div>
-          </div>
-        </a>
-
+    <!-- Hero sáv -->
+    <div class="home-hero">
+      <div class="site-title">AkasztófaOnline</div>
+      <div class="site-sub">Üdv újra, <strong id="welcome-name" style="color:var(--accent);"></strong>!</div>
+      <div class="user-bar">
+        <span class="stat">⭐ <strong id="welcome-coins">0</strong> csillag</span>
+        <span style="color:var(--border);">|</span>
+        <span class="stat">XP: <strong id="welcome-xp" style="color:var(--accent);">0</strong></span>
+        <span style="color:var(--border);">|</span>
+        <span id="online-count" style="color:var(--green);font-weight:600;font-size:.85rem;"></span>
+        <span style="color:var(--border);">|</span>
+        <a href="" id="my-profile-link" style="color:var(--accent);font-weight:600;font-size:.85rem;text-decoration:none;">👤 Profil</a>
+        <a href="leaderboard.html" style="color:var(--muted);font-weight:600;font-size:.85rem;text-decoration:none;">🏆 Ranglista</a>
       </div>
     </div>
-    <div class="card" style="margin-top:24px;">
-      <h3 style="margin-bottom:18px;font-size:1.1rem;">🟢 Online játékosok</h3>
-      <ul class="leaderboard" id="online-players">
-        <li style="color:var(--muted);padding:12px 16px;">Betöltés...</li>
-      </ul>
+
+    <!-- Játék kártyák -->
+    <div class="games-grid">
+
+      <a href="game.html" class="game-card accent">
+        <div class="gc-icon">A_</div>
+        <div class="gc-title">Akasztófa</div>
+        <div class="gc-desc">Találd ki az elrejtett szót betűnként, mielőtt akasztva lennél!</div>
+      </a>
+
+      <a href="szokap.html" class="game-card accent2">
+        <div class="gc-icon">A=B</div>
+        <div class="gc-title">Szókapcsolat</div>
+        <div class="gc-desc">Mi a közös a négy szóban? Válassz a négy lehetőség közül!</div>
+      </a>
+
+      <a href="wheel.html" class="game-card gold">
+        <div class="gc-icon">★</div>
+        <div class="gc-title">Szerencsekerék</div>
+        <div class="gc-desc">Pörgesd meg naponta egyszer — nyerhetsz csillagokat!</div>
+      </a>
+
     </div>
 
-    <!-- Gyors linkek -->
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
-      <a href="profile.html" class="btn btn-outline btn-sm" id="my-profile-link">👤 Profilom</a>
-      <a href="leaderboard.html" class="btn btn-outline btn-sm">🏆 Ranglista</a>
+    <!-- Alsó kétoszlopos rész -->
+    <div class="bottom-grid">
+
+      <!-- Online játékosok -->
+      <div class="card" style="padding:20px;">
+        <h3 style="font-size:.92rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+          <span class="online-dot"></span> Online játékosok
+        </h3>
+        <ul class="leaderboard" id="online-players" style="font-size:.88rem;">
+          <li style="color:var(--muted);padding:8px 0;">Betöltés...</li>
+        </ul>
+      </div>
+
+      <!-- Toplista -->
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <h3 style="font-size:.92rem;font-weight:700;">🏆 Toplista</h3>
+          <a href="leaderboard.html" style="font-size:.78rem;color:var(--accent);">Teljes lista →</a>
+        </div>
+        <ul class="leaderboard" id="leaderboard-home" style="font-size:.88rem;"></ul>
+      </div>
+
     </div>
 
-    <div class="card" style="margin-top:16px;">
-      <h3 style="margin-bottom:18px;font-size:1.1rem;">🏆 Toplista</h3>
-      <ul class="leaderboard" id="leaderboard-home"></ul>
-    </div>
   </div>
 
-  <!-- Login / Regisztráció -->
+  <!-- ══ LOGIN / REGISZTRÁCIÓS NÉZET ══ -->
   <div id="auth-screen" style="display:none;" class="fadeIn">
 
     <div id="referral-notice" style="display:none;margin:32px auto 16px;max-width:420px;" class="card center">
-      <div style="font-size:2rem;margin-bottom:6px;">🎁</div>
+      <div style="font-size:1.8rem;margin-bottom:6px;">🎁</div>
       <div style="font-weight:700;font-size:1.05rem;" id="referral-notice-text"></div>
-      <div style="color:var(--muted);font-size:.88rem;margin-top:4px;">Regisztrálj most és mindketten kaptok <strong style="color:var(--gold);">10 érmét</strong>!</div>
+      <div style="color:var(--muted);font-size:.88rem;margin-top:4px;">Regisztrálj most és mindketten kaptok <strong style="color:var(--gold);">10 csillagot</strong>!</div>
     </div>
 
     <div class="card" style="max-width:420px;margin:32px auto 0;">
       <div class="center" style="margin-bottom:24px;">
-        <div style="font-size:3rem;margin-bottom:8px;">🪢</div>
-        <h1 style="font-size:1.6rem;font-weight:800;">Akasztófa</h1>
-        <p style="color:var(--muted);font-size:.95rem;margin-top:6px;">Találd ki az elrejtett szót betűnként!</p>
+        <div style="font-size:2rem;font-weight:900;color:var(--accent);margin-bottom:8px;">[ AkasztófaOnline ]</div>
+        <p style="color:var(--muted);font-size:.92rem;">Szórejtvény és szókapcsolat játékok — regisztrálj és versenyezz!</p>
       </div>
 
       <div class="tabs">
@@ -110,6 +236,7 @@
         <button class="tab-btn" id="tab-btn-register" onclick="switchTab('register')">Regisztráció</button>
       </div>
 
+      <!-- Bejelentkezés -->
       <div class="tab-content active" id="tab-login">
         <div class="form-group">
           <label>Felhasználónév</label>
@@ -123,9 +250,10 @@
         <button class="btn btn-primary btn-full" style="margin-top:8px;" id="login-btn" onclick="doLogin()">Bejelentkezés</button>
       </div>
 
+      <!-- Regisztráció -->
       <div class="tab-content" id="tab-register">
         <div id="reg-ref-info" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.88rem;">
-          🎁 Meghívó: <strong id="reg-ref-name" style="color:var(--accent);"></strong> — regisztráció után mindketten kaptok <strong style="color:var(--gold);">10 érmét</strong>!
+          🎁 Meghívó: <strong id="reg-ref-name" style="color:var(--accent);"></strong> — regisztráció után mindketten kaptok <strong style="color:var(--gold);">10 csillagot</strong>!
         </div>
         <div class="form-group">
           <label>Felhasználónév</label>
@@ -175,8 +303,8 @@ function switchTab(tab) {
 async function doLogin() {
   const name = document.getElementById('login-name').value.trim();
   const pass = document.getElementById('login-pass').value;
-  const err = document.getElementById('login-error');
-  const btn = document.getElementById('login-btn');
+  const err  = document.getElementById('login-error');
+  const btn  = document.getElementById('login-btn');
   err.textContent = '';
   btn.disabled = true; btn.textContent = 'Betöltés...';
   try {
@@ -184,7 +312,7 @@ async function doLogin() {
     if (!snap.exists) { err.textContent = 'Nem létezik ilyen felhasználó!'; return; }
     if (snap.data().password !== pass) { err.textContent = 'Hibás jelszó!'; return; }
     setSession(name);
-    window.location.href = 'game.html';
+    window.location.reload();
   } catch(e) {
     err.textContent = 'Kapcsolati hiba: ' + e.message;
   } finally {
@@ -193,32 +321,29 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
-  const pass = document.getElementById('reg-pass').value;
+  const name  = document.getElementById('reg-name').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
-  const err = document.getElementById('reg-error');
-  const succ = document.getElementById('reg-success');
-  const btn = document.getElementById('reg-btn');
+  const err   = document.getElementById('reg-error');
+  const succ  = document.getElementById('reg-success');
+  const btn   = document.getElementById('reg-btn');
   err.textContent = ''; succ.textContent = '';
 
-  if (!name || !pass) { err.textContent = 'Töltsd ki mindkét mezőt!'; return; }
-  if (name.length < 2) { err.textContent = 'A név legalább 2 karakter!'; return; }
-  if (pass.length < 3) { err.textContent = 'A jelszó legalább 3 karakter!'; return; }
-  if (pass !== pass2) { err.textContent = 'A két jelszó nem egyezik!'; return; }
+  if (!name || !pass)    { err.textContent = 'Töltsd ki mindkét mezőt!'; return; }
+  if (name.length < 2)   { err.textContent = 'A név legalább 2 karakter!'; return; }
+  if (pass.length < 3)   { err.textContent = 'A jelszó legalább 3 karakter!'; return; }
+  if (pass !== pass2)    { err.textContent = 'A két jelszó nem egyezik!'; return; }
 
   btn.disabled = true; btn.textContent = 'Létrehozás...';
   try {
     const existing = await db.collection('users').doc(name).get();
     if (existing.exists) { err.textContent = 'Ez a név már foglalt!'; return; }
 
-    let coins = 0;
-    let referredBy = null;
-
+    let coins = 0, referredBy = null;
     if (refParam && refParam !== name) {
       const refSnap = await db.collection('users').doc(refParam).get();
       if (refSnap.exists) {
-        coins = REFERRAL_BONUS;
-        referredBy = refParam;
+        coins = REFERRAL_BONUS; referredBy = refParam;
         await db.collection('users').doc(refParam).update({
           coins: firebase.firestore.FieldValue.increment(REFERRAL_BONUS),
           referralCount: firebase.firestore.FieldValue.increment(1),
@@ -228,21 +353,17 @@ async function doRegister() {
     }
 
     await db.collection('users').doc(name).set({
-      name, password: pass,
-      created: Date.now(),
-      bestScore: 0, bestLevel: 0,
-      gamesPlayed: 0, totalPoints: 0,
-      lastPlayed: null,
-      coins, referredBy,
-      referralCount: 0, referredUsers: []
+      name, password: pass, created: Date.now(),
+      bestScore: 0, bestLevel: 0, gamesPlayed: 0, totalPoints: 0,
+      lastPlayed: null, coins, referredBy, referralCount: 0, referredUsers: [], xp: 0
     });
 
     setSession(name);
     if (referredBy) {
-      succ.textContent = '🎉 Regisztráltál és kaptál 10 érmét!';
-      setTimeout(() => { window.location.href = 'game.html'; }, 1200);
+      succ.textContent = '🎉 Regisztráltál és kaptál 10 csillagot!';
+      setTimeout(() => window.location.reload(), 1200);
     } else {
-      window.location.href = 'game.html';
+      window.location.reload();
     }
   } catch(e) {
     err.textContent = 'Hiba: ' + e.message;
@@ -251,12 +372,11 @@ async function doRegister() {
   }
 }
 
-function loadOnlinePlayers() {
-  db.collection('presence').onSnapshot(snap => {
-    renderOnline(snap);
-  });
+function doLogout() { clearSession(); location.reload(); }
 
-  // 20 másodpercenként újraellenőrzi — kiszűri a lejárt rekordokat
+// ── Online játékosok ──
+function loadOnlinePlayers() {
+  db.collection('presence').onSnapshot(snap => renderOnline(snap));
   setInterval(() => {
     db.collection('presence').get().then(snap => renderOnline(snap));
   }, 20000);
@@ -266,86 +386,62 @@ function renderOnline(snap) {
   const el = document.getElementById('online-players');
   const countEl = document.getElementById('online-count');
   const now = Date.now();
-  const TIMEOUT = 45 * 1000; // 45 másodperc — heartbeat 20mp, tehát 2 kihagyás után offline
+  const TIMEOUT = 45000;
 
   const active = [];
   snap.forEach(d => {
     const u = d.data();
-    if ((now - (u.since || 0)) < TIMEOUT) {
-      active.push(u);
-    } else {
-      db.collection('presence').doc(d.id).delete().catch(()=>{});
-    }
+    if ((now - (u.since || 0)) < TIMEOUT) active.push(u);
+    else db.collection('presence').doc(d.id).delete().catch(()=>{});
   });
 
-  if (countEl) {
-    countEl.textContent = active.length > 0 ? '🟢 ' + active.length + ' online' : '';
-  }
+  if (countEl) countEl.textContent = active.length > 0 ? active.length + ' online' : '';
 
   if (!el) return;
   if (active.length === 0) {
-    el.innerHTML = '<li style="color:var(--muted);padding:12px 16px;">Jelenleg senki sem játszik.</li>';
+    el.innerHTML = '<li style="color:var(--muted);padding:8px 0;">Senki sem játszik most.</li>';
     return;
   }
   const mySession = getSession();
   el.innerHTML = active.map(u => {
     const isMe = u.name === mySession;
-    return '<li>' +
-      '<span style="color:var(--green);font-size:1rem;min-width:14px;margin-right:4px;">●</span>' +
-      '<span class="lb-name">' +
-        '<a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a>' +
-        (isMe ? '<span style="background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;">Te</span>' : '') +
+    return '<li style="padding:8px 0;">' +
+      '<span style="color:var(--green);margin-right:6px;font-size:.9rem;">●</span>' +
+      '<span class="lb-name"><a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a>' +
+      (isMe ? '<span style="background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:999px;margin-left:5px;">Te</span>' : '') +
       '</span>' +
-      '<span style="color:var(--muted);font-size:.82rem;">🎮 Játszik</span>' +
     '</li>';
   }).join('');
 }
 
-function doLogout() { clearSession(); location.reload(); }
-
+// ── Toplista ──
 async function loadLeaderboard() {
   const el = document.getElementById('leaderboard-home');
   try {
-    // Összes user lekérése, majd kliens oldalon XP szerint rendezés
     const snap = await db.collection('users').get();
-    if (snap.empty) { el.innerHTML = '<li style="color:var(--muted);padding:16px;">Még nincs játékos.</li>'; return; }
-
+    if (snap.empty) { el.innerHTML = '<li style="color:var(--muted);padding:8px 0;">Még nincs játékos.</li>'; return; }
     const users = [];
-    snap.forEach(d => {
-      const u = d.data();
-      u.xp = Number(u.xp) || 0;
-      users.push(u);
-    });
-    // XP szerint csökkenő — egyenlő XP esetén több csillag = előrébb
-    users.sort((a,b) => {
-      const diff = b.xp - a.xp;
-      if (diff !== 0) return diff;
-      return (Number(b.coins)||0) - (Number(a.coins)||0);
-    });
-
-    const ranks = ['gold','silver','bronze'];
-    let html = '';
-    users.slice(0,10).forEach((u, i) => {
+    snap.forEach(d => { const u = d.data(); u.xp = Number(u.xp)||0; users.push(u); });
+    users.sort((a,b) => b.xp - a.xp || (b.coins||0) - (a.coins||0));
+    const rankCls = ['gold','silver','bronze'];
+    el.innerHTML = users.slice(0,8).map((u,i) => {
       const rank = getRank(u.xp);
-      html += '<li>' +
-        '<span class="lb-rank ' + (ranks[i]||'') + '">' + (i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.') + '</span>' +
+      return '<li style="padding:8px 0;">' +
+        '<span class="lb-rank ' + (rankCls[i]||'') + '">' + (i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.') + '</span>' +
         '<span class="lb-name"><a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a></span>' +
-        '<span style="display:flex;gap:10px;align-items:center;">' +
-          '<span style="color:' + rank.color + ';font-weight:700;font-size:.9rem;">' + rank.icon + ' ' + rank.name + '</span>' +
-          '<span style="color:var(--accent);font-size:.85rem;">' + u.xp + ' XP</span>' +
-          '<span style="color:var(--gold);font-size:.8rem;">' + (u.coins||0) + ' ⭐</span>' +
-        '</span>' +
+        '<span style="color:' + rank.color + ';font-weight:700;font-size:.82rem;margin-left:auto;">' + rank.icon + ' ' + u.xp + ' XP</span>' +
       '</li>';
-    });
-    el.innerHTML = html;
+    }).join('');
   } catch(e) {
-    el.innerHTML = '<li style="color:var(--red);padding:16px;">Hiba a betöltésnél</li>';
+    el.innerHTML = '<li style="color:var(--red);padding:8px 0;">Hiba</li>';
   }
 }
 
+// ── Indítás ──
 async function init() {
   const name = getSession();
 
+  // Referral értesítő (nem bejelentkezett)
   if (refParam && !name) {
     try {
       const refSnap = await db.collection('users').doc(refParam).get();
@@ -367,15 +463,13 @@ async function init() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('welcome-screen').style.display = 'block';
         document.getElementById('welcome-name').textContent = u.name;
-        document.getElementById('welcome-coins').textContent = (u.coins||0);
-        document.getElementById('welcome-xp').textContent = (u.xp||0) + ' XP';
+        document.getElementById('welcome-coins').textContent = u.coins || 0;
+        document.getElementById('welcome-xp').textContent = (u.xp || 0) + ' XP';
         document.getElementById('nav-user').textContent = u.name;
-        document.getElementById('nav-profile').style.display = 'inline';
-        document.getElementById('nav-profile').href = 'profile.html?player=' + encodeURIComponent(u.name);
-        document.getElementById('my-profile-link').href = 'profile.html?player=' + encodeURIComponent(u.name);
         document.getElementById('nav-logout').style.display = 'inline';
-        await loadLeaderboard();
+        document.getElementById('my-profile-link').href = 'profile.html?player=' + encodeURIComponent(u.name);
         loadOnlinePlayers();
+        await loadLeaderboard();
         return;
       }
     } catch(e) {}
@@ -384,7 +478,7 @@ async function init() {
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'block';
-  loadOnlinePlayers(); // vendégként is mutatja az online játékosokat
+  loadOnlinePlayers();
 }
 
 document.addEventListener('keydown', e => {
