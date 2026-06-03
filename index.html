@@ -511,11 +511,19 @@ function showMainInviteNotif(inviteId, fromName) {
   const notif = document.createElement('div');
   notif.id = 'main-invite-notif';
   notif.style.cssText = `
-    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-    background: var(--card); border: 2px solid var(--accent);
-    border-radius: 16px; padding: 20px 28px; z-index: 999;
-    box-shadow: var(--shadow); text-align: center;
-    min-width: 300px; max-width: 90vw;
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 18px 20px;
+    z-index: 9999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    text-align: center;
+    width: 90vw;
+    max-width: 360px;
     animation: fadeIn .3s ease;
   `;
   notif.innerHTML = `
@@ -546,7 +554,7 @@ async function acceptMainInvite() {
   const inv = invSnap.data();
   if (!inv) return;
 
-  // Szoba létrehozása — 5 kör
+  const myName = getSession();
   const TOTAL_ROUNDS = 5;
   const times = [20, 30, 45];
   const letters = 'ABCDEFGHIJKLMNOPRSTUVZ';

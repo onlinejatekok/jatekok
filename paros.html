@@ -40,7 +40,22 @@
     .result-box .res-score-item { text-align:center; }
     .result-box .res-score-item .val { font-size:2.2rem; font-weight:900; }
     .result-box .res-score-item .lbl { font-size:.82rem; color:var(--muted); }
-    .notification-banner { position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--card); border:2px solid var(--accent); border-radius:12px; padding:16px 24px; z-index:200; box-shadow:var(--shadow); animation:fadeIn .3s ease; text-align:center; min-width:300px; }
+    .notification-banner {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 2px solid var(--accent);
+      border-radius: 14px;
+      padding: 18px 20px;
+      z-index: 9999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: fadeIn .3s ease;
+      text-align: center;
+      width: 90vw;
+      max-width: 360px;
+    }
     .notification-banner h3 { margin-bottom:8px; }
     .notification-banner .notif-btns { display:flex; gap:10px; justify-content:center; margin-top:12px; }
     @media(max-width:540px) { .game-arena { grid-template-columns:1fr; } .big-letter { font-size:3.5rem; } }
