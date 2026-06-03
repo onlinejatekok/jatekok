@@ -140,7 +140,7 @@ function copyShareUrl() {
 async function init() {
   if (loggedInName) {
     document.getElementById('nav-user').textContent = loggedInName;
-    document.getElementById('nav-game').style.display = 'inline';
+    document.getElementById('nav-game') && (document.getElementById('nav-game').style.display = 'inline');
     document.getElementById('nav-logout').style.display = 'inline';
   }
 
@@ -153,66 +153,73 @@ async function init() {
     return;
   }
 
+  let u = null;
   try {
     const snap = await db.collection('users').doc(targetName).get();
-    document.getElementById('loading').style.display = 'none';
-
     if (!snap.exists) {
+      document.getElementById('loading').style.display = 'none';
       document.getElementById('not-found').style.display = 'block';
       return;
     }
+    u = snap.data();
+  } catch(e) {
+    console.error('Firebase hiba:', e);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('not-found').style.display = 'block';
+    return;
+  }
 
-    const u = snap.data();
-    document.getElementById('profile-content').style.display = 'block';
-    document.title = u.name + ' profilja – Útvesztő';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('profile-content').style.display = 'block';
+  document.title = u.name + ' profilja – AkasztófaOnline';
 
-    document.getElementById('avatar-text').textContent = u.name.charAt(0).toUpperCase();
-    document.getElementById('profile-name').textContent = u.name;
-    document.getElementById('profile-joined').textContent = 'Csatlakozott: ' + formatDate(u.created);
-    document.getElementById('profile-last').textContent = 'Utolsó játék: ' + formatDate(u.lastPlayed);
-    document.getElementById('stat-best-score').textContent = u.bestScore || 0;
-    document.getElementById('stat-best-level').textContent = u.bestLevel || 0;
-    document.getElementById('stat-games').textContent = u.gamesPlayed || 0;
-    document.getElementById('stat-coins').textContent = (u.coins||0) + ' ⭐';
+  document.getElementById('avatar-text').textContent = u.name.charAt(0).toUpperCase();
+  document.getElementById('profile-name').textContent = u.name;
+  document.getElementById('profile-joined').textContent = 'Csatlakozott: ' + formatDate(u.created);
+  document.getElementById('profile-last').textContent = 'Utolsó játék: ' + formatDate(u.lastPlayed);
+  document.getElementById('stat-best-score').textContent = u.bestScore || 0;
+  document.getElementById('stat-best-level').textContent = u.bestLevel || 0;
+  document.getElementById('stat-games').textContent = u.gamesPlayed || 0;
+  document.getElementById('stat-coins').textContent = (u.coins||0) + ' ⭐';
 
-    // XP és rang
-    const xp = u.xp || 0;
+  // XP és rang (csak Akasztófa)
+  const xp = u.xp || 0;
+  try {
     const prog = getXpProgress(xp);
     const rank = prog.current;
     document.getElementById('rank-name').innerHTML =
       '<span style="color:' + rank.color + ';">' + rank.icon + ' ' + rank.name + '</span>';
-    document.getElementById('rank-xp').textContent = xp + ' XP';
+    document.getElementById('rank-xp').textContent = xp + ' Akasztófa XP';
     document.getElementById('xp-bar').style.width = prog.pct + '%';
     document.getElementById('xp-bar').style.background =
       'linear-gradient(90deg, ' + rank.color + ', var(--accent2))';
     document.getElementById('rank-next').textContent = prog.next
       ? 'Következő rang: ' + prog.next.icon + ' ' + prog.next.name + ' — még ' + (prog.needed - prog.have) + ' XP kell'
-      : '🌟 Elérted a maximális rangot!';
+      : 'Elérted a maximális rangot!';
+  } catch(e) { console.error('Rang hiba:', e); }
 
-    const pct = Math.min(100, Math.round(((u.bestLevel||0)/10)*100));
-    document.getElementById('progress-bar').style.width = pct + '%';
-    document.getElementById('progress-label').textContent = (u.bestLevel||0) + ' / 10';
+  const pct = Math.min(100, Math.round(((u.bestLevel||0)/10)*100));
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = (u.bestLevel||0) + ' / 10';
 
-    document.getElementById('referral-count').textContent = u.referralCount || 0;
-    document.getElementById('referral-earned').textContent = ((u.referralCount||0)*10) + ' ⭐';
+  document.getElementById('referral-count').textContent = u.referralCount || 0;
+  document.getElementById('referral-earned').textContent = ((u.referralCount||0)*10) + ' ⭐';
 
-    if (loggedInName === u.name) {
-      document.getElementById('share-box').style.display = 'block';
-      const base = window.location.href.split('profile.html')[0];
-      document.getElementById('share-url').value = base + 'index.html?ref=' + encodeURIComponent(u.name);
+  if (loggedInName === u.name) {
+    document.getElementById('share-box').style.display = 'block';
+    const base = window.location.href.split('profile.html')[0];
+    document.getElementById('share-url').value = base + 'index.html?ref=' + encodeURIComponent(u.name);
 
-      // Admin link — csak a tulajdonosnak
-      if (u.name === 'Melcsó' || u.name === 'melcso' || u.name === 'Melcso') {
+    if (u.name === 'Melcsó' || u.name === 'melcso' || u.name === 'Melcso') {
+      const existing = document.getElementById('admin-link-box');
+      if (!existing) {
         const adminLink = document.createElement('div');
+        adminLink.id = 'admin-link-box';
         adminLink.style.cssText = 'margin-top:14px;text-align:center;';
-        adminLink.innerHTML = '<a href="admin.html" style="color:var(--red);font-size:.85rem;font-weight:700;">⚙️ Admin Panel</a>';
+        adminLink.innerHTML = '<a href="admin.html" style="color:var(--red);font-size:.85rem;font-weight:700;">Admin Panel</a>';
         document.getElementById('share-box').appendChild(adminLink);
       }
     }
-
-  } catch(e) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('not-found').style.display = 'block';
   }
 }
 
