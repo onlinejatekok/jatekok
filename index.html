@@ -196,8 +196,8 @@
 
     </div>
 
-    <!-- Alsó kétoszlopos rész -->
-    <div class="bottom-grid">
+    <!-- Alsó rész — csak online játékosok, toplista kikerült az akasztófa oldalra -->
+    <div style="max-width:480px;">
 
       <!-- Online játékosok -->
       <div class="card" style="padding:20px;">
@@ -207,15 +207,6 @@
         <ul class="leaderboard" id="online-players" style="font-size:.88rem;">
           <li style="color:var(--muted);padding:8px 0;">Betöltés...</li>
         </ul>
-      </div>
-
-      <!-- Toplista -->
-      <div class="card" style="padding:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <h3 style="font-size:.92rem;font-weight:700;">🏆 Toplista</h3>
-          <a href="leaderboard.html" style="font-size:.78rem;color:var(--accent);">Teljes lista →</a>
-        </div>
-        <ul class="leaderboard" id="leaderboard-home" style="font-size:.88rem;"></ul>
       </div>
 
     </div>
@@ -449,39 +440,6 @@ function renderOnline(snap) {
   }).join('');
 }
 
-// ── Toplista ──
-async function loadLeaderboard() {
-  const el = document.getElementById('leaderboard-home');
-  try {
-    const snap = await db.collection('users').get();
-    if (snap.empty) { el.innerHTML = '<li style="color:var(--muted);padding:8px 0;">Még nincs játékos.</li>'; return; }
-    const users = [];
-    snap.forEach(d => { const u = d.data(); u.xp = Number(u.xp)||0; users.push(u); });
-    users.sort((a,b) => b.xp - a.xp || (b.coins||0) - (a.coins||0));
-    const rankCls = ['gold','silver','bronze'];
-    const myName = getSession();
-    const RANK_COLORS = ['#8888aa','#cd7f32','#a0a0b0','#d4a500','#7c5cfc','#fc5c5c','#c45cfc','#ffffff'];
-    el.innerHTML = users.slice(0,8).map((u,i) => {
-      const rank = getRank(u.xp);
-      const rankIdx = getRankIndex(u.xp);
-      const isMe = u.name === myName;
-      const avatarColor = stringToColor(u.name);
-      return '<li class="' + (isMe ? 'is-me' : '') + '">' +
-        '<span class="lb-rank ' + (rankCls[i]||'') + '">' + (i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.') + '</span>' +
-        '<div class="lb-avatar" style="background:' + avatarColor + ';">' + u.name.charAt(0).toUpperCase() + '</div>' +
-        '<span class="lb-name">' +
-          '<a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a>' +
-          '<span class="rank-pill rank-pill-' + rankIdx + '">' + rank.name + '</span>' +
-          (isMe ? '<span style="background:var(--accent);color:#fff;font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:999px;">Te</span>' : '') +
-        '</span>' +
-        '<span style="color:var(--gold);font-weight:700;font-size:.85rem;margin-left:auto;">' + (u.coins||0) + ' ⭐</span>' +
-      '</li>';
-    }).join('');
-  } catch(e) {
-    el.innerHTML = '<li style="color:var(--red);padding:8px 0;">Hiba</li>';
-  }
-}
-
 // ── Meghívó értesítő a főmenüben ──
 function watchInvitesOnMain(myName) {
   db.collection('invites')
@@ -585,6 +543,7 @@ async function acceptMainInvite() {
     status: 'playing',
     words: {},
     scores: { [inv.from]: 0, [myName]: 0 },
+    totalScores: { [inv.from]: 0, [myName]: 0 },
     roundScores: {}
   });
 
@@ -659,7 +618,6 @@ async function init() {  const name = getSession();
         // Meghívók figyelése a főmenüben
         watchInvitesOnMain(u.name);
         loadOnlinePlayers();
-        await loadLeaderboard();
         return;
       }
     } catch(e) {}

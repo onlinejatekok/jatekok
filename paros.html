@@ -338,6 +338,7 @@ async function acceptInvite() {
     status: 'playing',
     words: {},
     scores: { [inv.from]: 0, [username]: 0 },
+    totalScores: { [inv.from]: 0, [username]: 0 },
     roundScores: {}
   });
 
@@ -428,9 +429,11 @@ function joinRoom(roomId, oppName) {
       badge.style.display = 'none';
     }
 
-    // Pontszámok frissítése
-    document.getElementById('my-score').textContent = (room.scores && room.scores[username]) || 0;
-    document.getElementById('opp-score').textContent = (room.scores && room.scores[oppName]) || 0;
+    // Pontszámok frissítése — totalScores = összes kör összege
+    const myTotal = (room.totalScores && room.totalScores[username]) || 0;
+    const oppTotal = (room.totalScores && room.totalScores[oppName]) || 0;
+    document.getElementById('my-score').textContent = myTotal;
+    document.getElementById('opp-score').textContent = oppTotal;
 
     // Ellenfél szavai
     if (room.words && room.words[oppName]) {
@@ -558,12 +561,15 @@ async function submitWord() {
   input.classList.add('flash');
   setTimeout(() => input.classList.remove('flash'), 300);
 
-  // Firestore frissítés
+  // Firestore frissítés — scores = csak e kör szavai (megjelenítéshez),
+  // totalScores = összes kör összege (végeredményhez)
   const currentWords = room.words && room.words[username] ? room.words[username] : [];
   currentWords.push(word);
+  const prevTotal = (room.totalScores && room.totalScores[username]) || 0;
   await db.collection('rooms').doc(currentRoomId).update({
     ['words.' + username]: currentWords,
-    ['scores.' + username]: currentWords.length
+    ['scores.' + username]: currentWords.length,
+    ['totalScores.' + username]: prevTotal + 1
   });
 }
 
@@ -623,8 +629,8 @@ async function showResult(room) {
   document.getElementById('game-screen').style.display = 'none';
   document.getElementById('result-screen').style.display = 'flex';
 
-  const myScore = (room.scores && room.scores[username]) || 0;
-  const oppScore = (room.scores && room.scores[opponentName]) || 0;
+  const myScore = (room.totalScores && room.totalScores[username]) || 0;
+  const oppScore = (room.totalScores && room.totalScores[opponentName]) || 0;
   const won = myScore > oppScore;
   const draw = myScore === oppScore;
 
