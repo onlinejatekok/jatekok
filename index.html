@@ -600,6 +600,7 @@ async function init() {  const name = getSession();
         document.getElementById('welcome-name').textContent = u.name;
         document.getElementById('nav-user').textContent = u.name;
         document.getElementById('nav-logout').style.display = 'inline';
+        showWelcomeToast(u.name);
         document.getElementById('my-profile-link').href = 'profile.html?player=' + encodeURIComponent(u.name);
         // Jelzés hogy online van (főmenüben)
         setPresence(u.name);
@@ -628,6 +629,61 @@ document.addEventListener('keydown', e => {
   if (!active) return;
   if (active.id === 'tab-login') doLogin(); else doRegister();
 });
+
+// ── Üdvözlő toast ──
+function showWelcomeToast(name) {
+  const hour = new Date().getHours();
+  let greeting, emoji;
+  if (hour >= 5 && hour < 10) {
+    greeting = 'Jó reggelt'; emoji = '🌅';
+  } else if (hour >= 10 && hour < 12) {
+    greeting = 'Jó délelőttöt'; emoji = '☀️';
+  } else if (hour >= 12 && hour < 18) {
+    greeting = 'Jó napot'; emoji = '🌤️';
+  } else if (hour >= 18 && hour < 22) {
+    greeting = 'Jó estét'; emoji = '🌆';
+  } else {
+    greeting = 'Jó éjszakát'; emoji = '🌙';
+  }
+
+  const messages = [
+    'Készen állsz a játékra?',
+    'Ma is nyerni fogunk!',
+    'Szép napot kívánunk!',
+    'Remek, hogy itt vagy!',
+    'Vágjunk bele!',
+  ];
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+
+  const toast = document.createElement('div');
+  toast.id = 'welcome-toast';
+  toast.innerHTML =
+    '<div style="font-size:2.2rem;margin-bottom:6px;">' + emoji + '</div>' +
+    '<div style="font-size:1.1rem;font-weight:900;color:var(--text);">' + greeting + ', <span style="color:var(--accent);">' + name + '</span>!</div>' +
+    '<div style="font-size:.88rem;color:var(--muted);margin-top:4px;">' + msg + '</div>';
+  toast.style.cssText =
+    'position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);' +
+    'background:var(--card);border:1px solid var(--accent);border-radius:16px;' +
+    'padding:20px 32px;text-align:center;z-index:9999;' +
+    'box-shadow:0 8px 32px rgba(124,92,252,0.25);' +
+    'transition:transform .4s cubic-bezier(.34,1.56,.64,1), opacity .4s ease;opacity:0;';
+  document.body.appendChild(toast);
+
+  // Beúszik
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+      toast.style.opacity = '1';
+    });
+  });
+
+  // 3.5mp után kicsúszik
+  setTimeout(() => {
+    toast.style.transform = 'translateX(-50%) translateY(80px)';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 400);
+  }, 3500);
+}
 
 init();
 </script>
