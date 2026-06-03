@@ -278,12 +278,24 @@ function chooseAnswer(answer) {
     fb.className = 'feedback show correct';
     markSolved(SZOKAP_PUZZLES.indexOf(currentPuzzle));
 
+    // XP szerzés Firebase-ben
+    const xpEarned = hintUsed ? 1 : 2;
+    db.collection('users').doc(username).get().then(snap => {
+      if (snap.exists) {
+        const oldXP = snap.data().xp || 0;
+        db.collection('users').doc(username).update({ xp: oldXP + xpEarned });
+      }
+    }).catch(()=>{});
+
     setTimeout(() => {
       document.getElementById('result-overlay').style.display = 'flex';
       document.getElementById('res-icon').textContent = '🎉';
       document.getElementById('res-title').textContent = 'Helyes!';
       document.getElementById('res-score').textContent = 'A kapcsolat: ' + correct;
-      document.getElementById('res-sub').textContent = hintUsed ? 'Tipp segítségével oldottad meg.' : 'Tipp nélkül oldottad meg!';
+      const xpEarned = hintUsed ? 1 : 2;
+      document.getElementById('res-sub').textContent = hintUsed
+        ? 'Tipp segítségével — +1 XP'
+        : 'Tipp nélkül oldottad meg — +2 XP';
     }, 800);
   } else {
     lives--;
