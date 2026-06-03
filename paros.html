@@ -59,6 +59,12 @@
 
 <div class="paros-wrap">
 
+  <!-- Becsületes játék figyelmeztetés -->
+  <div id="fair-play-banner" style="background:rgba(245,200,66,0.12);border:1px solid var(--gold);border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;text-align:center;animation:fadeIn .4s ease;">
+    <span style="font-size:.95rem;font-weight:700;color:var(--gold);">⚖️ Becsületes játékot kérünk!</span>
+    <span style="color:var(--muted);font-size:.85rem;display:block;margin-top:3px;">Csak valódi, értelmes magyar szavakat írj — a szociális élmény miatt is érdemes tisztességesen játszani.</span>
+  </div>
+
   <!-- LOBBY -->
   <div id="lobby-screen">
     <div class="lobby-card">
@@ -322,6 +328,17 @@ function joinRoom(roomId, oppName) {
   document.getElementById('lobby-screen').style.display = 'none';
   document.getElementById('pending-card').style.display = 'none';
   document.getElementById('game-screen').style.display = 'block';
+
+  // Rövid fair play emlékeztető játék közben
+  const fairBanner = document.getElementById('fair-play-banner');
+  if (fairBanner) {
+    fairBanner.style.display = 'block';
+    setTimeout(() => {
+      fairBanner.style.opacity = '0';
+      fairBanner.style.transition = 'opacity .5s';
+      setTimeout(() => { fairBanner.style.display = 'none'; }, 500);
+    }, 4000);
+  }
 
   document.getElementById('my-name-display').textContent = 'Te';
   document.getElementById('opp-name-display').textContent = oppName;
