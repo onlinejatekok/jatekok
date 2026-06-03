@@ -280,12 +280,111 @@ a:hover { text-decoration: underline; }
 .fadeIn { animation: fadeIn .35s ease; }
 .shake  { animation: shake .4s ease; }
 
+/* ══════════════════════════
+   HAMBURGER MENÜ
+══════════════════════════ */
+.hamburger {
+  display: none;
+  background: none; border: none;
+  color: var(--text); font-size: 1.6rem;
+  cursor: pointer; padding: 4px 8px;
+  line-height: 1;
+}
+.nav-drawer {
+  display: none;
+  flex-direction: column;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  gap: 14px;
+}
+.nav-drawer.open { display: flex; }
+.nav-drawer a, .nav-drawer button, .nav-drawer span {
+  color: var(--muted); font-size: 1rem;
+  background: none; border: none; cursor: pointer;
+  text-align: left; padding: 4px 0; font-family: inherit;
+}
+.nav-drawer a:hover, .nav-drawer button:hover { color: var(--text); }
+
+/* ══════════════════════════
+   RESZPONZÍV FEJLÉC
+══════════════════════════ */
+@media (max-width: 680px) {
+  .site-header { padding: 12px 16px; }
+  .site-header .nav-links { display: none; }
+  .hamburger { display: block; }
+}
+
+/* ══════════════════════════
+   ÁLTALÁNOS MOBILE
+══════════════════════════ */
 @media (max-width: 540px) {
+  .container { padding: 16px 12px; }
+  .card { padding: 18px 14px; }
+  .game-wrap { padding: 14px 10px; }
+  .cat-screen { padding: 16px 10px; }
+
+  /* Akasztófa játék */
   .game-area { grid-template-columns: 1fr; }
   .hangman-box { padding: 10px; }
   .hangman-box svg { width: 120px; height: 150px; }
-  .cat-grid { grid-template-columns: repeat(2,1fr); }
-  .letter-btn { width: 34px; height: 34px; font-size: .9rem; }
-  .stats-grid { grid-template-columns: 1fr; }
-  .card { padding: 20px 16px; }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ABC gombok — ujjbarátos méret */
+  .abc-grid { gap: 6px; padding: 12px 8px; }
+  .letter-btn { width: 40px; height: 40px; font-size: 1rem; border-radius: 8px; }
+
+  /* HUD */
+  .hud { padding: 10px 14px; gap: 6px; }
+  .hud .lives-bar span { font-size: 1.1rem; }
+
+  /* Szó kijelző */
+  .word-display { gap: 7px; padding: 12px 10px; }
+  .letter-slot { width: 34px; height: 44px; font-size: 1.4rem; }
+
+  /* Eredmény */
+  .result-box { padding: 28px 18px; }
+  .result-box .big-icon { font-size: 3rem; }
+  .result-box h2 { font-size: 1.4rem; }
+  .result-box .res-actions { flex-direction: column; align-items: stretch; }
+  .result-box .res-actions .btn { text-align: center; }
+
+  /* Statisztika */
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stat-card .stat-value { font-size: 1.6rem; }
+
+  /* Profil */
+  .profile-header { flex-direction: column; text-align: center; }
+  .avatar { margin: 0 auto; }
+
+  /* Ranglista tábla vízszintes görgetés */
+  .card { overflow-x: auto; }
+
+  /* Megosztó sor */
+  .share-url-row { flex-direction: column; }
+  .share-url-row input { width: 100%; }
+
+  /* Gombok */
+  .btn { padding: 11px 20px; }
+  .btn-sm { padding: 8px 14px; font-size: .82rem; }
+
+  /* Spin gomb a kerékhez */
+  .spin-btn { padding: 14px 32px; font-size: 1rem; }
+
+  /* Szókapcsolat */
+  .words-grid { gap: 8px; }
+  .word-card { padding: 14px 8px; font-size: 1rem; }
+  .options-grid { gap: 8px; }
+  .opt-btn { padding: 12px 8px; font-size: .92rem; }
+}
+
+/* ══════════════════════════
+   KIS KÉPERNYŐ (360px)
+══════════════════════════ */
+@media (max-width: 380px) {
+  .letter-btn { width: 36px; height: 36px; font-size: .88rem; }
+  .letter-slot { width: 30px; height: 40px; font-size: 1.2rem; }
+  .cat-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cat-btn { padding: 16px 8px; }
+  .cat-btn .ci { font-size: 1.8rem; }
 }

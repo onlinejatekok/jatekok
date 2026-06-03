@@ -10,7 +10,7 @@
   <style>
     .wheel-wrap { max-width: 500px; margin: 0 auto; padding: 24px 16px; text-align: center; }
     .wheel-container { position: relative; margin: 24px auto; width: 320px; height: 320px; }
-    #wheel-canvas { border-radius: 50%; box-shadow: 0 0 30px rgba(124,92,252,0.4); cursor: pointer; }
+    #wheel-canvas { border-radius: 50%; box-shadow: 0 0 30px rgba(124,92,252,0.4); cursor: pointer; display: block; }
     .wheel-pointer {
       position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
       width: 0; height: 0;
@@ -37,6 +37,10 @@
     .result-msg.win { background: rgba(92,252,142,0.12); color: var(--green); border: 1px solid var(--green); }
     .result-msg.lose { background: rgba(252,92,92,0.08); color: var(--muted); border: 1px solid var(--border); }
     .coins-display { font-size: 1.1rem; color: var(--gold); font-weight: 700; margin-top: 8px; }
+
+    @media (max-width: 400px) {
+      .wheel-container { width: 280px; height: 280px; }
+    }
   </style>
 </head>
 <body>
@@ -74,6 +78,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="firebase.js"></script>
 <script src="settings.js"></script>
+<script src="hamburger.js"></script>
 <script>
 const SESSION_KEY = 'doorpuzzle_session';
 const username = localStorage.getItem(SESSION_KEY);
@@ -106,12 +111,15 @@ let currentAngle = 0;
 // ── Canvas rajzolás ──
 const canvas = document.getElementById('wheel-canvas');
 const ctx = canvas.getContext('2d');
-const cx = canvas.width / 2;
-const cy = canvas.height / 2;
-const radius = cx - 8;
 
 function drawWheel(angle) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = cx - 8;
+
+  ctx.clearRect(0, 0, w, h);
   const segAngle = (2 * Math.PI) / SEGMENTS.length;
 
   SEGMENTS.forEach((seg, i) => {
@@ -135,8 +143,9 @@ function drawWheel(angle) {
     ctx.rotate(start + segAngle / 2);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 15px Segoe UI, sans-serif';
-    ctx.fillText(seg.label, radius - 14, 5);
+    const fontSize = Math.max(11, Math.floor(w / 22));
+    ctx.font = 'bold ' + fontSize + 'px Segoe UI, sans-serif';
+    ctx.fillText(seg.label, radius - 10, 5);
     ctx.restore();
   });
 
@@ -269,6 +278,17 @@ loadCoins();
 
 // Percenként frissíti a visszaszámlálót
 setInterval(updateCooldownUI, 60000);
+
+// Reszponzív canvas — ablakméret változásnál újrarajzol
+function resizeCanvas() {
+  const container = document.querySelector('.wheel-container');
+  const size = container.offsetWidth;
+  canvas.width = size;
+  canvas.height = size;
+  drawWheel(currentAngle);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 </script>
 </body>
 </html>
