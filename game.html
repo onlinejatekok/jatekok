@@ -218,23 +218,23 @@ const STREAK_BONUS_AT = 5;
 const STREAK_BONUS_COINS = 5;
 
 // ── Kitalált szavak mentése localStorage-ba ──
-function solvedKey() {
-  return 'hangman_solved_' + username + '_' + currentDifficulty + '_' + currentCat;
+// Globális lista — kategória és nehézségtől függetlenül
+function globalSolvedKey() {
+  return 'hangman_solved_global_' + username;
 }
 
 function loadSolvedWords() {
   try {
-    const raw = localStorage.getItem(solvedKey());
+    const raw = localStorage.getItem(globalSolvedKey());
     return new Set(raw ? JSON.parse(raw) : []);
   } catch(e) { return new Set(); }
 }
 
 function saveSolvedWord(word) {
   try {
-    const key = solvedKey();
     const existing = loadSolvedWords();
-    existing.add(word);
-    localStorage.setItem(key, JSON.stringify([...existing]));
+    existing.add(word.toUpperCase());
+    localStorage.setItem(globalSolvedKey(), JSON.stringify([...existing]));
   } catch(e) {}
 }
 
@@ -293,7 +293,7 @@ function loadWord() {
     const fb = document.getElementById('feedback-msg');
     fb.textContent = '🎉 Minden szót kitaláltál! A lista újraindul...';
     fb.className = 'feedback-msg show correct';
-    localStorage.removeItem(solvedKey());
+    localStorage.removeItem(globalSolvedKey());
     solvedWords = new Set();
     catWords = [...getWords(currentDifficulty, currentCat)].sort(() => Math.random() - 0.5);
     setTimeout(() => { fb.className = 'feedback-msg'; loadWord(); }, 2500);
