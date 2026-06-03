@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-adsense-account" content="ca-pub-6255373288681857">
+  <title>AkasztófaOnline – Szókapcsolat</title>
+  <link rel="stylesheet" href="style.css?v=8" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6255373288681857" crossorigin="anonymous"></script>
+  <style>
+    .game-wrap { max-width: 600px; margin: 0 auto; padding: 20px 16px; }
+
+    .level-badge {
+      display: inline-block; padding: 4px 14px; border-radius: 999px;
+      font-size: .82rem; font-weight: 700; margin-bottom: 16px;
+      background: rgba(124,92,252,0.15); color: var(--accent); border: 1px solid var(--accent);
+    }
+
+    .words-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin: 20px 0;
+    }
+    .word-card {
+      background: var(--bg2); border: 2px solid var(--border);
+      border-radius: 12px; padding: 18px 12px;
+      text-align: center; font-size: 1.2rem; font-weight: 800;
+      color: var(--text); letter-spacing: .05em;
+      transition: all .2s;
+    }
+    .word-card.highlight { border-color: var(--accent); color: var(--accent); background: rgba(124,92,252,0.08); }
+
+    .question-text {
+      text-align: center; font-size: 1.1rem; color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .options-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 20px;
+    }
+    .opt-btn {
+      background: var(--card); border: 2px solid var(--border);
+      border-radius: 10px; padding: 14px 10px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      color: var(--text); font-family: inherit; text-align: center;
+      transition: all .2s;
+    }
+    .opt-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+    .opt-btn.correct { background: rgba(92,252,142,0.15); border-color: var(--green); color: var(--green); }
+    .opt-btn.wrong   { background: rgba(252,92,92,0.1);   border-color: var(--red);   color: var(--red); }
+    .opt-btn:disabled { cursor: default; }
+
+    .feedback {
+      text-align: center; padding: 12px 18px; border-radius: 10px;
+      font-size: 1rem; font-weight: 600; margin-bottom: 16px; display: none;
+    }
+    .feedback.show { display: block; animation: fadeIn .3s ease; }
+    .feedback.correct { background: rgba(92,252,142,0.12); color: var(--green); border: 1px solid var(--green); }
+    .feedback.wrong   { background: rgba(252,92,92,0.12);  color: var(--red);   border: 1px solid var(--red); }
+
+    .hud {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 18px; margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+    }
+    .hud .lives { display: flex; gap: 4px; font-size: 1.2rem; }
+    .hud .level-info { font-size: .85rem; color: var(--muted); }
+    .hud .level-info span { color: var(--text); font-weight: 700; }
+    .hud .coins { color: var(--gold); font-weight: 700; }
+
+    .hint-bar { text-align: center; margin-bottom: 14px; }
+    .hint-btn {
+      background: var(--bg2); border: 1px solid var(--gold);
+      border-radius: 8px; color: var(--gold); padding: 8px 18px;
+      font-size: .88rem; font-weight: 700; cursor: pointer;
+      transition: all .2s; font-family: inherit;
+    }
+    .hint-btn:hover:not(:disabled) { background: rgba(245,200,66,0.1); }
+    .hint-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .hint-text {
+      color: var(--gold); font-size: .88rem; margin-top: 8px; min-height: 20px;
+    }
+
+    .diff-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: .75rem; font-weight: 700; margin-left: 8px;
+    }
+    .diff-1 { background: rgba(92,252,142,.15); color: var(--green); }
+    .diff-2 { background: rgba(245,200,66,.15); color: var(--gold); }
+    .diff-3 { background: rgba(252,92,92,.15);  color: var(--red); }
+    .diff-4 { background: rgba(124,92,252,.15); color: var(--accent); }
+
+    .result-overlay {
+      position: fixed; inset: 0; background: rgba(13,13,26,0.92);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+    }
+    .result-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 40px 36px; text-align: center;
+      max-width: 420px; width: 90%; box-shadow: var(--shadow);
+      animation: fadeIn .3s ease;
+    }
+    .result-box .big-icon { font-size: 4rem; margin-bottom: 12px; }
+    .result-box h2 { font-size: 1.6rem; margin-bottom: 8px; }
+    .result-box .res-score { font-size: 2rem; font-weight: 900; color: var(--gold); margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">🪢 AkasztófaOnline</div>
+  <nav class="nav-links">
+    <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
+    <a href="index.html">Főoldal</a>
+    <a href="game.html">Akasztófa</a>
+    <a href="wheel.html">🎡 Kerék</a>
+    <a href="leaderboard.html">🏆 Ranglista</a>
+    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙️ Beállítások</button>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">Kilépés</button>
+  </nav>
+</header>
+
+<div class="game-wrap">
+
+  <div class="hud">
+    <div class="lives" id="lives-display"></div>
+    <div class="level-info">Szint: <span id="level-display">1</span></div>
+    <div class="coins">⭐ <span id="coins-display">0</span></div>
+  </div>
+
+  <div id="game-screen" class="card fadeIn">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <span class="level-badge" id="diff-badge">Könnyű</span>
+      <span style="color:var(--muted);font-size:.82rem;" id="progress-text">1 / 50 feladat</span>
+    </div>
+
+    <p class="question-text">Mi a közös a következő négy szóban?</p>
+
+    <div class="words-grid" id="words-grid"></div>
+
+    <div class="options-grid" id="options-grid"></div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="hint-bar">
+      <button class="hint-btn" id="hint-btn" onclick="useHint()">
+        💡 Tipp mutatása — 5 ⭐
+      </button>
+      <div class="hint-text" id="hint-text"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Eredmény -->
+<div class="result-overlay" id="result-overlay" style="display:none;">
+  <div class="result-box">
+    <div class="big-icon" id="res-icon"></div>
+    <h2 id="res-title"></h2>
+    <div class="res-score" id="res-score"></div>
+    <p id="res-sub" style="color:var(--muted);margin-bottom:20px;"></p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="nextPuzzle()">➜ Következő</button>
+      <a href="index.html" class="btn btn-outline">Főoldal</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
+<script src="settings.js"></script>
+<script src="szokap_data.js"></script>
+<script>
+const SESSION_KEY = 'doorpuzzle_session';
+const username = localStorage.getItem(SESSION_KEY);
+if (!username) { window.location.href = 'index.html'; }
+
+document.getElementById('nav-user').textContent = username;
+function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
+
+const MAX_LIVES = 3;
+const HINT_COST = 5;
+const SAVE_KEY = 'szokap_progress_' + username;
+
+let lives = MAX_LIVES;
+let coins = 0;
+let currentLevel = 0;
+let hintUsed = false;
+let answered = false;
+
+// Kitalált feladványok tárolása
+function getSolvedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(SAVE_KEY) || '[]')); } catch(e) { return new Set(); }
+}
+function markSolved(idx) {
+  const s = getSolvedSet(); s.add(idx);
+  localStorage.setItem(SAVE_KEY, JSON.stringify([...s]));
+}
+
+// Szint alapján feladványok szűrése
+function getPuzzleForLevel(level) {
+  // Szintek szerint nehezedés
+  const solved = getSolvedSet();
+  let pool;
+  if (level <= 10)      pool = SZOKAP_PUZZLES.filter(p => p.difficulty === 1);
+  else if (level <= 25) pool = SZOKAP_PUZZLES.filter(p => p.difficulty <= 2);
+  else if (level <= 40) pool = SZOKAP_PUZZLES.filter(p => p.difficulty <= 3);
+  else                  pool = SZOKAP_PUZZLES;
+
+  // Nem kitalált feladványok
+  const available = pool.filter((p,i) => !solved.has(SZOKAP_PUZZLES.indexOf(p)));
+  if (available.length === 0) {
+    // Ha mindent megoldott, reset
+    localStorage.removeItem(SAVE_KEY);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+let currentPuzzle = null;
+
+function loadPuzzle() {
+  answered = false;
+  hintUsed = false;
+  currentPuzzle = getPuzzleForLevel(currentLevel);
+  if (!currentPuzzle) return;
+
+  // Nehézség badge
+  const diffLabels = {1:'🟢 Könnyű', 2:'🟡 Közepes', 3:'🔴 Nehéz', 4:'⚡ Mester'};
+  const diffColors = {1:'diff-1', 2:'diff-2', 3:'diff-3', 4:'diff-4'};
+  const badge = document.getElementById('diff-badge');
+  badge.textContent = diffLabels[currentPuzzle.difficulty];
+  badge.className = 'level-badge ' + diffColors[currentPuzzle.difficulty];
+
+  document.getElementById('level-display').textContent = currentLevel + 1;
+  document.getElementById('progress-text').textContent = (currentLevel + 1) + '. feladat';
+
+  // Szavak
+  const grid = document.getElementById('words-grid');
+  grid.innerHTML = currentPuzzle.words.map(w =>
+    '<div class="word-card">' + w + '</div>'
+  ).join('');
+
+  // Válasz opciók keverve
+  const opts = [...currentPuzzle.options].sort(() => Math.random() - 0.5);
+  const optGrid = document.getElementById('options-grid');
+  optGrid.innerHTML = opts.map(o =>
+    '<button class="opt-btn" onclick="chooseAnswer(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>'
+  ).join('');
+
+  // Reset
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('hint-text').textContent = '';
+  document.getElementById('hint-btn').disabled = false;
+  document.getElementById('result-overlay').style.display = 'none';
+
+  renderHUD();
+}
+
+function chooseAnswer(answer) {
+  if (answered) return;
+  answered = true;
+
+  const correct = currentPuzzle.answer;
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correct) b.classList.add('correct');
+    else if (b.textContent === answer && answer !== correct) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('feedback');
+
+  if (answer === correct) {
+    fb.textContent = '✅ Helyes! A kapcsolat: ' + correct;
+    fb.className = 'feedback show correct';
+    markSolved(SZOKAP_PUZZLES.indexOf(currentPuzzle));
+
+    setTimeout(() => {
+      document.getElementById('result-overlay').style.display = 'flex';
+      document.getElementById('res-icon').textContent = '🎉';
+      document.getElementById('res-title').textContent = 'Helyes!';
+      document.getElementById('res-score').textContent = 'A kapcsolat: ' + correct;
+      document.getElementById('res-sub').textContent = hintUsed ? 'Tipp segítségével oldottad meg.' : 'Tipp nélkül oldottad meg!';
+    }, 800);
+  } else {
+    lives--;
+    renderHUD();
+    fb.textContent = '❌ Nem ez! Még ' + lives + ' próbád van.';
+    fb.className = 'feedback show wrong';
+    answered = false;
+
+    if (lives <= 0) {
+      setTimeout(() => {
+        document.getElementById('result-overlay').style.display = 'flex';
+        document.getElementById('res-icon').textContent = '💀';
+        document.getElementById('res-title').textContent = 'Elfogytak az életeid!';
+        document.getElementById('res-score').textContent = 'A helyes válasz: ' + correct;
+        document.getElementById('res-sub').textContent = (currentLevel + 1) + '. szintig jutottál.';
+        document.getElementById('result-overlay').querySelector('.btn-primary').textContent = '🔄 Újrakezd';
+        document.getElementById('result-overlay').querySelector('.btn-primary').onclick = restartGame;
+      }, 800);
+    }
+  }
+}
+
+function nextPuzzle() {
+  currentLevel++;
+  lives = MAX_LIVES;
+  loadPuzzle();
+}
+
+function restartGame() {
+  currentLevel = 0;
+  lives = MAX_LIVES;
+  loadPuzzle();
+}
+
+function useHint() {
+  if (hintUsed || coins < HINT_COST) return;
+  hintUsed = true;
+  document.getElementById('hint-btn').disabled = true;
+
+  // Megmutat egy helyes szót a feladványból
+  const hint = 'Gondolj arra: mind a négy szó ' + currentPuzzle.answer.toLowerCase() + ' kategóriába esik.';
+  document.getElementById('hint-text').textContent = '💡 ' + hint;
+
+  // Csillag levonás Firebase-ben
+  coins -= HINT_COST;
+  document.getElementById('coins-display').textContent = coins;
+  db.collection('users').doc(username).update({
+    coins: firebase.firestore.FieldValue.increment(-HINT_COST)
+  }).catch(e => console.error(e));
+}
+
+function renderHUD() {
+  const el = document.getElementById('lives-display');
+  el.innerHTML = '';
+  for (let i = 0; i < MAX_LIVES; i++) {
+    el.innerHTML += i < lives ? '❤️' : '🖤';
+  }
+  document.getElementById('coins-display').textContent = coins;
+}
+
+async function loadCoins() {
+  try {
+    const snap = await db.collection('users').doc(username).get();
+    if (snap.exists) {
+      coins = snap.data().coins || 0;
+      renderHUD();
+    }
+  } catch(e) {}
+}
+
+loadCoins();
+loadPuzzle();
+</script>
+</body>
+</html>
