@@ -107,10 +107,6 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:20px;">
-      <h3 style="margin-bottom:18px;font-size:1.1rem;">🏆 Toplista</h3>
-      <ul class="leaderboard" id="leaderboard"></ul>
-    </div>
   </div>
 </main>
 
@@ -215,33 +211,10 @@ async function init() {
       }
     }
 
-    await loadLeaderboard(u.name);
-  } catch(e) {
+    } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('not-found').style.display = 'block';
   }
-}
-
-async function loadLeaderboard(highlightName) {
-  const snap = await db.collection('users').orderBy('bestScore','desc').limit(10).get();
-  const el = document.getElementById('leaderboard');
-  if (snap.empty) { el.innerHTML = '<li style="color:var(--muted);padding:16px;">Még nincs játékos.</li>'; return; }
-  const ranks = ['gold','silver','bronze'];
-  let i = 0, html = '';
-  snap.forEach(d => {
-    const u = d.data();
-    const isMe = u.name === highlightName;
-    html += `<li style="${isMe?'background:rgba(124,92,252,0.12);border-radius:8px;':''}">
-      <span class="lb-rank ${ranks[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</span>
-      <span class="lb-name"><a href="profile.html?player=${encodeURIComponent(u.name)}">${u.name}${isMe?' 👈':''}</a></span>
-      <span style="display:flex;gap:10px;align-items:center;">
-        <span style="color:var(--gold);font-size:.8rem;">${u.coins||0} ⭐</span>
-        <span class="lb-score">${u.bestScore||0} pont</span>
-      </span>
-    </li>`;
-    i++;
-  });
-  el.innerHTML = html;
 }
 
 init();
