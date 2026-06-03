@@ -156,14 +156,9 @@
       <div class="site-title">AkasztófaOnline</div>
       <div class="site-sub">Üdv újra, <strong id="welcome-name" style="color:var(--accent);"></strong>!</div>
       <div class="user-bar">
-        <span class="stat">⭐ <strong id="welcome-coins">0</strong> csillag</span>
-        <span style="color:var(--border);">|</span>
-        <span class="stat">Akasztófa XP: <strong id="welcome-xp" style="color:var(--accent);">0</strong></span>
-        <span style="color:var(--border);">|</span>
         <span id="online-count" style="color:var(--green);font-weight:600;font-size:.85rem;"></span>
         <span style="color:var(--border);">|</span>
         <a href="" id="my-profile-link" style="color:var(--accent);font-weight:600;font-size:.85rem;text-decoration:none;">👤 Profil</a>
-        <a href="leaderboard.html" style="color:var(--muted);font-weight:600;font-size:.85rem;text-decoration:none;">🏆 Ranglista</a>
       </div>
     </div>
 
@@ -603,8 +598,6 @@ async function init() {  const name = getSession();
         document.getElementById('loading').style.display = 'none';
         document.getElementById('welcome-screen').style.display = 'block';
         document.getElementById('welcome-name').textContent = u.name;
-        document.getElementById('welcome-coins').textContent = u.coins || 0;
-        document.getElementById('welcome-xp').textContent = (u.xp || 0) + ' XP';
         document.getElementById('nav-user').textContent = u.name;
         document.getElementById('nav-logout').style.display = 'inline';
         document.getElementById('my-profile-link').href = 'profile.html?player=' + encodeURIComponent(u.name);
