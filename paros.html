@@ -512,6 +512,15 @@ if (wordInp) wordInp.addEventListener('input', () => {
 // Indítás
 loadOnlinePlayers();
 watchInvites();
+
+// Ha URL-ben van roomId (főmenüből elfogadott meghívó)
+const urlP = new URLSearchParams(window.location.search);
+const urlRoomId = urlP.get('roomId');
+const urlOpp = urlP.get('opp');
+if (urlRoomId && urlOpp) {
+  // Kis delay hogy a Firebase betöltődjön
+  setTimeout(() => joinRoom(urlRoomId, decodeURIComponent(urlOpp)), 800);
+}
 </script>
 </body>
 </html>

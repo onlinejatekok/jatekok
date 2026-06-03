@@ -623,6 +623,8 @@ async function init() {  const name = getSession();
         // Oldal elhagyásakor offline
         window.addEventListener('beforeunload', () => clearPresence(u.name));
         window.addEventListener('pagehide', () => clearPresence(u.name));
+        // Meghívók figyelése a főmenüben
+        watchInvitesOnMain(u.name);
         loadOnlinePlayers();
         await loadLeaderboard();
         return;
