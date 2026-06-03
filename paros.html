@@ -83,6 +83,8 @@
       <div class="big-letter" id="current-letter">?</div>
       <div class="timer" id="timer-display">--</div>
       <div style="font-size:.8rem;color:var(--muted);margin-top:6px;" id="round-info"></div>
+      <!-- Kihívás badge -->
+      <div id="challenge-badge" style="display:none;margin-top:10px;"></div>
     </div>
 
     <div class="game-arena">
@@ -270,10 +272,22 @@ async function acceptInvite() {
   const letters = 'ABCDEFGHIJKLMNOPRSTUVZ';
   const letter = letters[Math.floor(Math.random() * letters.length)];
 
+  // Random kihívás
+  const CHALLENGES = [
+    null, null, null, // 3/8 esély hogy nincs kihívás
+    { type: 'minLen', value: 5, label: 'Minimum 5 betűs szavak!' },
+    { type: 'minLen', value: 6, label: 'Minimum 6 betűs szavak!' },
+    { type: 'maxLen', value: 4, label: 'Maximum 4 betűs szavak!' },
+    { type: 'contains', value: 'A', label: 'A szóban legyen "A" betű!' },
+    { type: 'doublePoints', value: true, label: '2x pont — de csak 5+ betűs szavak!' },
+  ];
+  const challenge = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
+
   const roomRef = await db.collection('rooms').add({
     players: [inv.from, username],
     letter: letter,
     roundTime: roundTime,
+    challenge: challenge || null,
     startTime: Date.now() + 3000,
     endTime: Date.now() + 3000 + roundTime * 1000,
     status: 'playing',
@@ -322,6 +336,13 @@ function joinRoom(roomId, oppName) {
     // Betű megjelenítése
     document.getElementById('current-letter').textContent = room.letter;
     document.getElementById('round-info').textContent = 'Idő: ' + room.roundTime + ' mp';
+
+    // Kihívás badge megjelenítése
+    const badge = document.getElementById('challenge-badge');
+    if (room.challenge && badge) {
+      badge.style.display = 'block';
+      badge.innerHTML = '<span style="background:rgba(245,200,66,0.15);border:1px solid var(--gold);color:var(--gold);padding:5px 14px;border-radius:999px;font-size:.82rem;font-weight:700;">⚡ Kihívás: ' + room.challenge.label + '</span>';
+    }
 
     // Pontszámok frissítése
     document.getElementById('my-score').textContent = (room.scores && room.scores[username]) || 0;
@@ -414,6 +435,32 @@ async function submitWord() {
     li.textContent = word;
     document.getElementById('my-words').prepend(li);
     return;
+  }
+
+  // Kihívás ellenőrzés
+  if (room.challenge) {
+    const ch = room.challenge;
+    if (ch.type === 'minLen' && word.length < ch.value) {
+      feedback.textContent = '❌ Legalább ' + ch.value + ' betűs szó kell!';
+      feedback.style.color = 'var(--red)';
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 400);
+      return;
+    }
+    if (ch.type === 'maxLen' && word.length > ch.value) {
+      feedback.textContent = '❌ Maximum ' + ch.value + ' betűs szó lehet!';
+      feedback.style.color = 'var(--red)';
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 400);
+      return;
+    }
+    if (ch.type === 'contains' && !word.includes(ch.value)) {
+      feedback.textContent = '❌ A szóban kell lennie "' + ch.value + '" betűnek!';
+      feedback.style.color = 'var(--red)';
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 400);
+      return;
+    }
   }
 
   // Érvényes szó
