@@ -4,9 +4,9 @@ const SETTINGS_KEY = 'hangman_settings';
 
 function getSettings() {
   try {
-    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { sound: true, theme: 'dark' };
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { sound: true, theme: 'dark', mobileMode: false };
   } catch(e) {
-    return { sound: true, theme: 'dark' };
+    return { sound: true, theme: 'dark', mobileMode: false };
   }
 }
 
@@ -149,6 +149,18 @@ function openSettings() {
         <button onclick="closeSettings()" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;">✕</button>
       </div>
 
+      <!-- Mobilos mód -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-weight:600;">📱 Mobilos beviteli mód</div>
+          <div style="font-size:.82rem;color:var(--muted);">Telefon saját billentyűzetét használja</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="mobile-toggle" ${s.mobileMode ? 'checked' : ''} onchange="toggleMobileMode(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
       <!-- Hang -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);">
         <div>
@@ -204,6 +216,15 @@ function toggleSound(on) {
   s.sound = on;
   saveSettings(s);
   if (on) playSound('click');
+}
+
+function toggleMobileMode(on) {
+  const s = getSettings();
+  s.mobileMode = on;
+  saveSettings(s);
+  // Ha a játék fut, frissíti a beviteli módot
+  if (typeof applyInputMode === 'function') applyInputMode();
+  playSound('click');
 }
 
 function setTheme(theme) {

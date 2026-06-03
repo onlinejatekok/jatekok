@@ -95,8 +95,28 @@
     </div>
   </div>
 
-  <!-- ABC -->
-  <div class="abc-grid" id="abc-grid"></div>
+  <!-- ABC vagy mobil bevitel -->
+  <div id="abc-grid" class="abc-grid"></div>
+
+  <!-- Mobil beviteli mező (mobilos módban) -->
+  <div id="mobile-input-wrap" style="display:none;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);">
+    <div style="color:var(--muted);font-size:.85rem;margin-bottom:8px;text-align:center;">Írd be a következő betűt:</div>
+    <div style="display:flex;gap:10px;">
+      <input type="text"
+        id="mobile-letter-input"
+        maxlength="1"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        inputmode="text"
+        placeholder="Betű..."
+        style="flex:1;padding:14px 16px;font-size:1.4rem;font-weight:700;text-align:center;text-transform:uppercase;background:var(--card);border:2px solid var(--accent);border-radius:10px;color:var(--text);outline:none;font-family:inherit;"
+      />
+      <button onclick="submitMobileLetter()" class="btn btn-primary" style="font-size:1.1rem;padding:14px 20px;">OK</button>
+    </div>
+    <div style="color:var(--muted);font-size:.78rem;text-align:center;margin-top:8px;">Már tippelt betűk: <span id="used-letters-display" style="color:var(--text);font-weight:600;"></span></div>
+  </div>
 
   <!-- Csillag vásárlás -->
   <div style="text-align:center;margin-top:14px;">
@@ -295,6 +315,7 @@ function loadWord() {
   renderLives();
   renderHangman();
   buildABC();
+  applyInputMode();
 }
 
 // ── Szó kijelző ──
@@ -543,8 +564,62 @@ document.addEventListener('keydown', e => {
   if (HU_ABC.includes(key) && !guessedLetters.includes(key)) guessLetter(key);
 });
 
+// ── Mobilos beviteli mód ──
+function applyInputMode() {
+  const isMobile = getSettings().mobileMode;
+  const abcGrid = document.getElementById('abc-grid');
+  const mobileWrap = document.getElementById('mobile-input-wrap');
+  if (!abcGrid || !mobileWrap) return;
+  if (isMobile) {
+    abcGrid.style.display = 'none';
+    mobileWrap.style.display = 'block';
+    updateUsedLetters();
+    // Auto fókusz a beviteli mezőre
+    setTimeout(() => {
+      const inp = document.getElementById('mobile-letter-input');
+      if (inp) inp.focus();
+    }, 100);
+  } else {
+    abcGrid.style.display = 'flex';
+    mobileWrap.style.display = 'none';
+  }
+}
+
+function updateUsedLetters() {
+  const el = document.getElementById('used-letters-display');
+  if (!el) return;
+  if (guessedLetters.length === 0) {
+    el.textContent = '—';
+  } else {
+    el.textContent = guessedLetters.join(', ');
+  }
+}
+
+function submitMobileLetter() {
+  const inp = document.getElementById('mobile-letter-input');
+  if (!inp) return;
+  const letter = inp.value.trim().toUpperCase();
+  inp.value = '';
+  inp.focus();
+  if (!letter || !HU_ABC.includes(letter)) return;
+  if (guessedLetters.includes(letter)) return;
+  guessLetter(letter);
+  updateUsedLetters();
+}
+
+// Enter a mobil beviteli mezőnél
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('mobile-letter-input');
+  if (inp) {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); submitMobileLetter(); }
+    });
+  }
+});
+
 loadUserXP();
 watchCoins();
+applyInputMode();
 </script>
 </body>
 </html>
