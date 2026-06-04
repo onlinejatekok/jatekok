@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="google-adsense-account" content="ca-pub-6255373288681857">
-  <title>Online Játékok – Szókapcsolat</title>
+  <title>Online JĂˇtĂ©kok â€“ SzĂłkapcsolat</title>
   <link rel="stylesheet" href="style.css?v=8" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6255373288681857" crossorigin="anonymous"></script>
   <style>
@@ -108,15 +108,15 @@
 <body>
 
 <header class="site-header">
-  <div class="logo">[ Online Játékok ]</div>
+  <div class="logo">[ Online JĂˇtĂ©kok ]</div>
   <nav class="nav-links">
     <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
-    <a href="index.html">Főoldal</a>
-    <a href="game.html">Akasztófa</a>
-    <a href="wheel.html">🎡 Kerék</a>
-    <a href="leaderboard.html">🏆 Ranglista</a>
-    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙️ Beállítások</button>
-    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">Kilépés</button>
+    <a href="index.html">FĹ‘oldal</a>
+    <a href="game.html">AkasztĂłfa</a>
+    <a href="wheel.html">đźŽˇ KerĂ©k</a>
+    <a href="leaderboard.html">đźŹ† Ranglista</a>
+    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">âš™ď¸Ź BeĂˇllĂ­tĂˇsok</button>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">KilĂ©pĂ©s</button>
   </nav>
 </header>
 
@@ -125,16 +125,16 @@
   <div class="hud">
     <div class="lives" id="lives-display"></div>
     <div class="level-info">Szint: <span id="level-display">1</span></div>
-    <div class="coins">⭐ <span id="coins-display">0</span></div>
+    <div class="coins">â­ <span id="coins-display">0</span></div>
   </div>
 
   <div id="game-screen" class="card fadeIn">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-      <span class="level-badge" id="diff-badge">Könnyű</span>
+      <span class="level-badge" id="diff-badge">KĂ¶nnyĹ±</span>
       <span style="color:var(--muted);font-size:.82rem;" id="progress-text">1 / 50 feladat</span>
     </div>
 
-    <p class="question-text">Mi a közös a következő négy szóban?</p>
+    <p class="question-text">Mi a kĂ¶zĂ¶s a kĂ¶vetkezĹ‘ nĂ©gy szĂłban?</p>
 
     <div class="words-grid" id="words-grid"></div>
 
@@ -142,17 +142,11 @@
 
     <div class="feedback" id="feedback"></div>
 
-    <div class="hint-bar">
-      <button class="hint-btn" id="hint-btn" onclick="useHint()">
-        💡 Tipp mutatása — 5 ⭐
-      </button>
-      <div class="hint-text" id="hint-text"></div>
-    </div>
   </div>
 
 </div>
 
-<!-- Eredmény -->
+<!-- EredmĂ©ny -->
 <div class="result-overlay" id="result-overlay" style="display:none;">
   <div class="result-box">
     <div class="big-icon" id="res-icon"></div>
@@ -160,8 +154,10 @@
     <div class="res-score" id="res-score"></div>
     <p id="res-sub" style="color:var(--muted);margin-bottom:20px;"></p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="nextPuzzle()">➜ Következő</button>
-      <a href="index.html" class="btn btn-outline">Főoldal</a>
+      <button class="btn btn-primary" id="res-next-btn" onclick="nextPuzzle()">âžś KĂ¶vetkezĹ‘</button>
+      <button class="btn btn-outline" id="res-skip-btn" style="display:none;" onclick="skipWithStars()">â­ KihagyĂˇs (5 csillag)</button>
+      <button class="btn btn-outline" id="res-restart-btn" style="display:none;" onclick="restartGame()">đź”„ Ăšjrakezd</button>
+      <a href="index.html" class="btn btn-outline">FĹ‘oldal</a>
     </div>
   </div>
 </div>
@@ -180,23 +176,22 @@ if (!username) { window.location.href = 'index.html'; }
 document.getElementById('nav-user').textContent = username;
 function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
 
-// Presence — szókapcsolat játék
-db.collection('presence').doc(username).set({ name: username, online: true, where: 'szókapcsolat', since: Date.now() }).catch(()=>{});
-setInterval(() => db.collection('presence').doc(username).set({ name: username, online: true, where: 'szókapcsolat', since: Date.now() }).catch(()=>{}), 20000);
+// Presence
+db.collection('presence').doc(username).set({ name: username, online: true, where: 'szĂłkapcsolat', since: Date.now() }).catch(()=>{});
+setInterval(() => db.collection('presence').doc(username).set({ name: username, online: true, where: 'szĂłkapcsolat', since: Date.now() }).catch(()=>{}), 20000);
 window.addEventListener('beforeunload', () => db.collection('presence').doc(username).delete().catch(()=>{}));
 window.addEventListener('pagehide', () => db.collection('presence').doc(username).delete().catch(()=>{}));
 
 const MAX_LIVES = 3;
-const HINT_COST = 5;
+const SKIP_COST = 5;
 const SAVE_KEY = 'szokap_progress_' + username;
 
+// Ă‰let az EGĂ‰SZ jĂˇtĂ©kra vonatkozik, nem szintenkĂ©nt reset
 let lives = MAX_LIVES;
 let coins = 0;
 let currentLevel = 0;
-let hintUsed = false;
 let answered = false;
 
-// Kitalált feladványok tárolása
 function getSolvedSet() {
   try { return new Set(JSON.parse(localStorage.getItem(SAVE_KEY) || '[]')); } catch(e) { return new Set(); }
 }
@@ -205,9 +200,7 @@ function markSolved(idx) {
   localStorage.setItem(SAVE_KEY, JSON.stringify([...s]));
 }
 
-// Szint alapján feladványok szűrése
 function getPuzzleForLevel(level) {
-  // Szintek szerint nehezedés
   const solved = getSolvedSet();
   let pool;
   if (level <= 10)      pool = SZOKAP_PUZZLES.filter(p => p.difficulty === 1);
@@ -215,10 +208,8 @@ function getPuzzleForLevel(level) {
   else if (level <= 40) pool = SZOKAP_PUZZLES.filter(p => p.difficulty <= 3);
   else                  pool = SZOKAP_PUZZLES;
 
-  // Nem kitalált feladványok
-  const available = pool.filter((p,i) => !solved.has(SZOKAP_PUZZLES.indexOf(p)));
+  const available = pool.filter(p => !solved.has(SZOKAP_PUZZLES.indexOf(p)));
   if (available.length === 0) {
-    // Ha mindent megoldott, reset
     localStorage.removeItem(SAVE_KEY);
     return pool[Math.floor(Math.random() * pool.length)];
   }
@@ -229,12 +220,10 @@ let currentPuzzle = null;
 
 function loadPuzzle() {
   answered = false;
-  hintUsed = false;
   currentPuzzle = getPuzzleForLevel(currentLevel);
   if (!currentPuzzle) return;
 
-  // Nehézség badge
-  const diffLabels = {1:'🟢 Könnyű', 2:'🟡 Közepes', 3:'🔴 Nehéz', 4:'⚡ Mester'};
+  const diffLabels = {1:'đźź˘ KĂ¶nnyĹ±', 2:'đźźˇ KĂ¶zepes', 3:'đź”´ NehĂ©z', 4:'âšˇ Mester'};
   const diffColors = {1:'diff-1', 2:'diff-2', 3:'diff-3', 4:'diff-4'};
   const badge = document.getElementById('diff-badge');
   badge.textContent = diffLabels[currentPuzzle.difficulty];
@@ -243,24 +232,19 @@ function loadPuzzle() {
   document.getElementById('level-display').textContent = currentLevel + 1;
   document.getElementById('progress-text').textContent = (currentLevel + 1) + '. feladat';
 
-  // Szavak
   const grid = document.getElementById('words-grid');
   grid.innerHTML = currentPuzzle.words.map(w =>
     '<div class="word-card">' + w + '</div>'
   ).join('');
 
-  // Válasz opciók keverve
   const opts = [...currentPuzzle.options].sort(() => Math.random() - 0.5);
   const optGrid = document.getElementById('options-grid');
   optGrid.innerHTML = opts.map(o =>
     '<button class="opt-btn" onclick="chooseAnswer(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>'
   ).join('');
 
-  // Reset
   document.getElementById('feedback').className = 'feedback';
   document.getElementById('feedback').textContent = '';
-  document.getElementById('hint-text').textContent = '';
-  document.getElementById('hint-btn').disabled = false;
   document.getElementById('result-overlay').style.display = 'none';
 
   renderHUD();
@@ -268,73 +252,92 @@ function loadPuzzle() {
 
 function chooseAnswer(answer) {
   if (answered) return;
-  answered = true;
 
   const correct = currentPuzzle.answer;
   const btns = document.querySelectorAll('.opt-btn');
-  btns.forEach(b => {
-    b.disabled = true;
-    if (b.textContent === correct) b.classList.add('correct');
-    else if (b.textContent === answer && answer !== correct) b.classList.add('wrong');
-  });
-
   const fb = document.getElementById('feedback');
 
   if (answer === correct) {
-    fb.textContent = '✅ Helyes! A kapcsolat: ' + correct;
+    answered = true;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.textContent === correct) b.classList.add('correct');
+    });
+    fb.textContent = 'âś… Helyes! A kapcsolat: ' + correct;
     fb.className = 'feedback show correct';
     markSolved(SZOKAP_PUZZLES.indexOf(currentPuzzle));
 
-    // Szókapcsolat — nincs XP, nincs csillag jutalom
-    const xpEarned = 0;
-    setTimeout(() => {
-      document.getElementById('result-overlay').style.display = 'flex';
-      document.getElementById('res-icon').textContent = '🎉';
-      document.getElementById('res-title').textContent = 'Helyes!';
-      document.getElementById('res-score').textContent = 'A kapcsolat: ' + correct;
-      document.getElementById('res-sub').textContent = hintUsed
-        ? 'Tipp segítségével oldottad meg.'
-        : 'Tipp nélkül oldottad meg!';
-    }, 800);
+    setTimeout(() => showResult(true), 800);
   } else {
+    // Csak a rossz vĂˇlaszt jelĂ¶ljĂĽk
+    btns.forEach(b => { if (b.textContent === answer) b.classList.add('wrong'); });
     lives--;
     renderHUD();
-    fb.textContent = '❌ Nem ez! Még ' + lives + ' próbád van.';
-    fb.className = 'feedback show wrong';
-    answered = false;
-
-    // Csak a rosszat jelöljük — a helyeset NEM mutatjuk
-    btns.forEach(b => {
-      b.disabled = false;
-      b.classList.remove('correct', 'wrong');
-    });
-    // A rossz választ pirosan jelöljük
-    btns.forEach(b => {
-      if (b.textContent === answer) b.classList.add('wrong');
-    });
 
     if (lives <= 0) {
-      // Élet elfogy — MOST mutatjuk meg a helyeset
+      // Elfogott az Ă©let â€” megmutatjuk a helyeset + kihagyĂˇs opciĂł
+      answered = true;
       btns.forEach(b => {
         b.disabled = true;
         if (b.textContent === correct) b.classList.add('correct');
       });
-      setTimeout(() => {
-        document.getElementById('result-overlay').style.display = 'flex';
-        document.getElementById('res-icon').textContent = '💀';
-        document.getElementById('res-title').textContent = 'Elfogytak az életeid!';
-        document.getElementById('res-score').textContent = 'A helyes válasz: ' + correct;
-        document.getElementById('res-sub').textContent = (currentLevel + 1) + '. szintig jutottál.';
-        document.getElementById('result-overlay').querySelector('.btn-primary').textContent = '🔄 Újrakezd';
-        document.getElementById('result-overlay').querySelector('.btn-primary').onclick = restartGame;
-      }, 800);
+      fb.textContent = 'âťŚ Elfogytak az Ă©leteid!';
+      fb.className = 'feedback show wrong';
+      setTimeout(() => showResult(false), 800);
+    } else {
+      fb.textContent = 'âťŚ Nem ez! MĂ©g ' + lives + ' Ă©leted van.';
+      fb.className = 'feedback show wrong';
     }
   }
 }
 
+function showResult(won) {
+  const overlay = document.getElementById('result-overlay');
+  const nextBtn = document.getElementById('res-next-btn');
+  const skipBtn = document.getElementById('res-skip-btn');
+  const restartBtn = document.getElementById('res-restart-btn');
+
+  if (won) {
+    document.getElementById('res-icon').textContent = 'đźŽ‰';
+    document.getElementById('res-title').textContent = 'Helyes!';
+    document.getElementById('res-score').textContent = 'A kapcsolat: ' + currentPuzzle.answer;
+    document.getElementById('res-sub').textContent = (currentLevel + 1) + '. feladat teljesĂ­tve!';
+    nextBtn.style.display = 'inline-flex';
+    nextBtn.textContent = 'âžś KĂ¶vetkezĹ‘';
+    nextBtn.onclick = nextPuzzle;
+    skipBtn.style.display = 'none';
+    restartBtn.style.display = 'none';
+  } else {
+    document.getElementById('res-icon').textContent = 'đź’”';
+    document.getElementById('res-title').textContent = 'Elfogytak az Ă©leteid!';
+    document.getElementById('res-score').textContent = 'Helyes vĂˇlasz: ' + currentPuzzle.answer;
+    document.getElementById('res-sub').textContent = 'Kihagyhatod ezt a feladatot ' + SKIP_COST + ' csillagĂ©rt, vagy Ăşjrakezded.';
+    nextBtn.style.display = 'none';
+    // KihagyĂˇs gomb â€” csak ha van elĂ©g csillag
+    skipBtn.style.display = 'inline-flex';
+    skipBtn.textContent = 'â­ KihagyĂˇs (' + SKIP_COST + ' csillag)';
+    skipBtn.disabled = coins < SKIP_COST;
+    skipBtn.style.opacity = coins < SKIP_COST ? '0.4' : '1';
+    restartBtn.style.display = 'inline-flex';
+  }
+  overlay.style.display = 'flex';
+}
+
 function nextPuzzle() {
   currentLevel++;
+  // Ă‰let NEM resetelĹ‘dik szintenkĂ©nt
+  loadPuzzle();
+}
+
+function skipWithStars() {
+  if (coins < SKIP_COST) return;
+  coins -= SKIP_COST;
+  db.collection('users').doc(username).update({
+    coins: firebase.firestore.FieldValue.increment(-SKIP_COST)
+  }).catch(e => console.error(e));
+  // Ă‰let visszatĂ¶ltĂ©se kihagyĂˇskor
   lives = MAX_LIVES;
+  currentLevel++;
   loadPuzzle();
 }
 
@@ -344,28 +347,11 @@ function restartGame() {
   loadPuzzle();
 }
 
-function useHint() {
-  if (hintUsed || coins < HINT_COST) return;
-  hintUsed = true;
-  document.getElementById('hint-btn').disabled = true;
-
-  // Megmutat egy helyes szót a feladványból
-  const hint = 'Gondolj arra: mind a négy szó ' + currentPuzzle.answer.toLowerCase() + ' kategóriába esik.';
-  document.getElementById('hint-text').textContent = '💡 ' + hint;
-
-  // Csillag levonás Firebase-ben
-  coins -= HINT_COST;
-  document.getElementById('coins-display').textContent = coins;
-  db.collection('users').doc(username).update({
-    coins: firebase.firestore.FieldValue.increment(-HINT_COST)
-  }).catch(e => console.error(e));
-}
-
 function renderHUD() {
   const el = document.getElementById('lives-display');
   el.innerHTML = '';
   for (let i = 0; i < MAX_LIVES; i++) {
-    el.innerHTML += i < lives ? '❤️' : '🖤';
+    el.innerHTML += i < lives ? 'âť¤ď¸Ź' : 'đź–¤';
   }
   document.getElementById('coins-display').textContent = coins;
 }
@@ -380,7 +366,6 @@ async function loadCoins() {
   } catch(e) {}
 }
 
-// Valós idejű csillag figyelés
 function watchCoins() {
   db.collection('users').doc(username).onSnapshot(snap => {
     if (snap.exists) {
