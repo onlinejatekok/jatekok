@@ -102,9 +102,9 @@ resize();
 window.addEventListener('resize', () => { resize(); if (!over) start(); });
 
 // ── Konstansok ──
-const SZ   = 52;    // kocka mérete (szélesség = magasság)
+const SZ   = 34;    // blokk magassága
 const COLS  = ['#7c5cfc','#c45cfc','#fc5c5c','#5cfc8e','#f5c842','#5c9efc','#fc9e5c','#5cfcdc'];
-const HUDY  = 56;   // HUD magassága px (ne takarja a kockákat)
+const HUDY  = 56;   // HUD magassága px
 
 // ── Állapot ──
 let stacks, mov, score, over, raf, scrollOff;
@@ -113,9 +113,10 @@ function start() {
   cancelAnimationFrame(raf);
   resize();
 
-  // Alap kocka középen, legalul
-  const bx = Math.round((cv.width - SZ) / 2);
-  stacks    = [{ x: bx, w: SZ, c: '#3d2d8c' }];
+  // Alap blokk középen, legalul — képernyő szélessége 55%-a
+  const bw = Math.round(cv.width * 0.55);
+  const bx = Math.round((cv.width - bw) / 2);
+  stacks    = [{ x: bx, w: bw, c: '#3d2d8c' }];
   score     = 0;
   over      = false;
   scrollOff = 0;
@@ -131,8 +132,8 @@ function start() {
 function spawnMov() {
   const spd = Math.min(2.5 + score * 0.18, 13);
   const col  = COLS[stacks.length % COLS.length];
-  // A mozgó kocka mindig SZ széles és SZ magas
-  mov = { x: -SZ, w: SZ, c: col, d: 1, s: spd };
+  // A mozgó blokk az utolsó blokk szélességével indul
+  mov = { x: -last.w, w: last.w, c: col, d: 1, s: spd };
 }
 
 function tick() {
@@ -211,8 +212,8 @@ function draw() {
     drawBlock(b.x, y, b.w, SZ, b.c, i === 0);
   });
 
-  // Mozgó kocka
-  drawBlock(mov.x, movY(), SZ, SZ, mov.c, false);
+  // Mozgó blokk
+  drawBlock(mov.x, movY(), mov.w, SZ, mov.c, false);
 
   // Irányzó — legfelső kocka szélei
   const ly = getY(stacks.length - 1);
