@@ -608,42 +608,12 @@ function onDragMove(e) {
   const cell = getCellFromPoint(e.clientX, e.clientY);
   if (!cell) return;
   const r = +cell.dataset.r, c = +cell.dataset.c;
-  if (dragCells.length === 0) return;
 
-  const first = dragCells[0];
-  if (r === first.r && c === first.c) return;
+  // Ha ez a cella már benne van, ne adjuk hozzá újra
+  if (dragCells.some(dc => dc.r === r && dc.c === c)) return;
 
-  // Irány meghatározása az első és aktuális cella alapján
-  const totalDr = r - first.r;
-  const totalDc = c - first.c;
-
-  // Csak egyenes irány engedélyezett:
-  // vízszintes (dr=0), függőleges (dc=0), vagy pontos átló (|dr|===|dc|)
-  const isHorizontal = totalDr === 0;
-  const isVertical   = totalDc === 0;
-  const isDiagonal   = Math.abs(totalDr) === Math.abs(totalDc);
-
-  if (!isHorizontal && !isVertical && !isDiagonal) {
-    // Nem egyenes — nem frissítjük a kijelölést
-    return;
-  }
-
-  const dr = Math.sign(totalDr);
-  const dc = Math.sign(totalDc);
-  const steps = Math.max(Math.abs(totalDr), Math.abs(totalDc));
-
-  const newDrag = [];
-  for (let i = 0; i <= steps; i++) {
-    newDrag.push({ r: first.r + dr * i, c: first.c + dc * i });
-  }
-  dragCells = newDrag;
-
-  // Vizuális frissítés
-  document.querySelectorAll('.sw-cell').forEach(cel => cel.classList.remove('selecting'));
-  dragCells.forEach(dc2 => {
-    const el = document.querySelector('.sw-cell[data-r="'+dc2.r+'"][data-c="'+dc2.c+'"]');
-    if (el) el.classList.add('selecting');
-  });
+  dragCells.push({ r, c });
+  cell.classList.add('selecting');
 }
 
 async function endDrag() {
@@ -653,7 +623,7 @@ async function endDrag() {
 
   if (dragCells.length < 2) { dragCells = []; return; }
 
-  // Szó összerakása
+  // Szó összerakása a kijelölt cellákból
   const word = dragCells.map(dc => {
     const el = document.querySelector('.sw-cell[data-r="'+dc.r+'"][data-c="'+dc.c+'"]');
     return el ? el.textContent : '';
