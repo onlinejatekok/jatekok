@@ -35,49 +35,66 @@
     .sw-score-item .val { font-size:1.4rem; font-weight:900; color:var(--accent); }
     .sw-score-item .lbl { font-size:.72rem; color:var(--muted); }
 
-    /* Rács — teljes szélesség mobilon */
+    /* Rács — optimalizált mobilra */
     .grid-container {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       touch-action: none;
       user-select: none;
-      margin-left: -16px;
-      margin-right: -16px;
+      width: 100%;
     }
     .sw-grid {
       display: grid;
-      gap: 0;
+      gap: 3px;
       width: 100%;
       box-sizing: border-box;
-      padding: 4px;
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
+      background: var(--border);
+      padding: 3px;
+      border-radius: 8px;
     }
     .sw-cell {
       aspect-ratio: 1;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-weight: 900;
       cursor: pointer;
       background: var(--card);
       color: var(--text);
-      border: 1px solid var(--border);
-      transition: background .1s, color .1s;
+      transition: all .15s;
       -webkit-tap-highlight-color: transparent;
-      font-size: calc(100vw / var(--grid-cols, 6) * 0.42);
+      font-size: 1.8rem;
+      border-radius: 3px;
     }
-    @media(min-width: 601px) {
-      .grid-container { margin-left: 0; margin-right: 0; }
-      .sw-grid { border-radius: var(--radius); border: 1px solid var(--border); }
-      .sw-cell { font-size: 1.6rem; border-radius: 4px; }
+    
+    /* Mobilon nagyobb betűk */
+    @media(max-width: 600px) {
+      .sw-grid { gap: 2px; padding: 2px; }
+      .sw-cell { 
+        font-size: 2rem;
+      }
     }
-    .sw-cell.selecting { background: rgba(124,92,252,0.5); color: #fff; }
-    .sw-cell.found-me { background: rgba(92,252,142,0.35); color: var(--green); }
-    .sw-cell.found-opp { background: rgba(196,92,252,0.3); color: var(--accent2); }
-    .sw-cell.found-both { background: rgba(245,200,66,0.3); color: var(--gold); }
-    .sw-cell.selecting { background:rgba(124,92,252,0.35); color:#fff; border-color:var(--accent); }
-    .sw-cell.found-me { background:rgba(92,252,142,0.25); color:var(--green); border-color:var(--green); }
-    .sw-cell.found-opp { background:rgba(196,92,252,0.2); color:var(--accent2); border-color:var(--accent2); }
-    .sw-cell.found-both { background:rgba(245,200,66,0.2); color:var(--gold); border-color:var(--gold); }
+    
+    .sw-cell:active {
+      transform: scale(0.92);
+    }
+    .sw-cell.selecting {
+      background: rgba(124,92,252,0.6);
+      color: #fff;
+      transform: scale(1.08);
+      box-shadow: 0 0 8px rgba(124,92,252,0.5);
+    }
+    .sw-cell.found-me {
+      background: rgba(92,252,142,0.35);
+      color: var(--green);
+    }
+    .sw-cell.found-opp {
+      background: rgba(196,92,252,0.3);
+      color: var(--accent2);
+    }
+    .sw-cell.found-both {
+      background: rgba(245,200,66,0.35);
+      color: var(--gold);
+    }
 
     /* Szólisták */
     .words-panels { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
@@ -101,7 +118,9 @@
     .notif-banner .notif-btns { display:flex; gap:10px; justify-content:center; margin-top:12px; }
 
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-    @media(max-width:540px) { .sw-cell { width:30px; height:30px; font-size:.82rem; } .words-panels { grid-template-columns:1fr; } }
+    @media(max-width:540px) {
+      .words-panels { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -562,10 +581,6 @@ function joinRoom(roomId, oppName) {
 function renderGrid(flatGrid, foundWords) {
   const container = document.getElementById('sw-grid');
   container.style.gridTemplateColumns = 'repeat(' + gridSize + ', 1fr)';
-  // Betűméret számításhoz CSS változó
-  document.documentElement.style.setProperty('--grid-cols', gridSize);
-  container.style.setProperty('--grid-cols', gridSize);
-  document.querySelector('.grid-container').style.setProperty('--grid-cols', gridSize);
 
   // Melyik cellák vannak megtalálva?
   const foundCells = {}; // "r_c" -> playerName
