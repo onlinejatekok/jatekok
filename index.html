@@ -215,6 +215,12 @@
             <div class="gc-desc">8-as biliárd — 1 vagy 2 játékos. Lőj be minden golyót!</div>
           </a>
 
+          <a href="monopoly.html" class="game-card" style="border-color:var(--border);" onmouseover="this.style.borderColor='#f5c842';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+            <div class="gc-icon" style="color:#f5c842;">🎲</div>
+            <div class="gc-title">Mini Monopoly</div>
+            <div class="gc-desc">Magyar városok — vásárolj ingatlanokat és tedd tönkre az ellenfeleid!</div>
+          </a>
+
       </div>
     </div>
 
@@ -592,8 +598,7 @@ function declineMainInvite() {
 }
 
 // ── Szókereső meghívó figyelése a főmenüben ──
-function watchSwInvitesOnMain(myName) {
-  db.collection('sw_invites')
+function watchSwInvitesOnMain(myName) {  db.collection('sw_invites')
     .where('to', '==', myName)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
@@ -647,6 +652,60 @@ function declineSwInviteMain() {
   }
 }
 
+// ── Monopoly meghívó figyelése a főmenüben ──
+function watchMonoInvitesOnMain(myName) {
+  db.collection('mono_invites')
+    .where('to', '==', myName)
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const inv = change.doc.data();
+          if (inv.status !== 'pending') return;
+          if (Date.now() - (inv.created || 0) > 30000) return;
+          showMonoInviteNotif(change.doc.id, inv.from);
+        }
+      });
+    });
+}
+
+let monoInviteId = null;
+
+function showMonoInviteNotif(inviteId, fromName) {
+  monoInviteId = inviteId;
+  const existing = document.getElementById('mono-invite-notif');
+  if (existing) existing.remove();
+
+  const notif = document.createElement('div');
+  notif.id = 'mono-invite-notif';
+  notif.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--card);border:2px solid #f5c842;border-radius:16px;padding:18px 20px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center;width:90vw;max-width:360px;animation:fadeIn .3s ease;';
+  notif.innerHTML =
+    '<div style="font-size:1.5rem;margin-bottom:6px;">🎲</div>' +
+    '<div style="font-weight:800;font-size:1.05rem;margin-bottom:4px;">' + fromName + ' Monopoly játékra hív!</div>' +
+    '<div style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">Magyar városok — elfogadod?</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+      '<button class="btn btn-primary btn-sm" onclick="acceptMonoInviteMain()">Elfogad</button>' +
+      '<button class="btn btn-outline btn-sm" onclick="declineMonoInviteMain()">Elutasít</button>' +
+    '</div>';
+  document.body.appendChild(notif);
+  setTimeout(() => { if (document.getElementById('mono-invite-notif')) declineMonoInviteMain(); }, 30000);
+}
+
+async function acceptMonoInviteMain() {
+  const notif = document.getElementById('mono-invite-notif');
+  if (notif) notif.remove();
+  if (!monoInviteId) return;
+  window.location.href = 'monopoly.html?inviteId=' + monoInviteId;
+}
+
+function declineMonoInviteMain() {
+  const notif = document.getElementById('mono-invite-notif');
+  if (notif) notif.remove();
+  if (monoInviteId) {
+    db.collection('mono_invites').doc(monoInviteId).update({ status: 'declined' }).catch(()=>{});
+    monoInviteId = null;
+  }
+}
+
 // ── Presence — főmenüben is online ──
 function setPresence(name) {
   db.collection('presence').doc(name).set({
@@ -696,9 +755,10 @@ async function init() {  const name = getSession();
         // Oldal elhagyásakor offline
         window.addEventListener('beforeunload', () => clearPresence(u.name));
         window.addEventListener('pagehide', () => clearPresence(u.name));
-        // Meghívók figyelése a főmenüben (páros játék + szókereső)
+        // Meghívók figyelése a főmenüben (páros játék + szókereső + monopoly)
         watchInvitesOnMain(u.name);
         watchSwInvitesOnMain(u.name);
+        watchMonoInvitesOnMain(u.name);
         loadOnlinePlayers();
         return;
       }

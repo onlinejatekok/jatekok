@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Online Játékok – Mini Monopoly</title>
+  <link rel="stylesheet" href="style.css?v=9"/>
+  <style>
+    .site-header{display:none;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#0d0d1a;color:#e8e8f5;font-family:'Segoe UI',sans-serif;min-height:100vh;}
+
+    /* ── LOBBY ── */
+    #lobby-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;}
+    #lobby-screen h1{font-size:2rem;font-weight:900;background:linear-gradient(135deg,#7c5cfc,#c45cfc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .lobby-card{background:#1a1a35;border:1px solid #2e2e5e;border-radius:16px;padding:22px;width:100%;max-width:420px;}
+    .player-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:8px;border:2px solid transparent;}
+    .player-row.online{border-color:#5cfc8e;}
+    .pr-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:1rem;flex-shrink:0;}
+    .inv-btn{background:linear-gradient(135deg,#7c5cfc,#c45cfc);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;}
+    .inv-btn:hover{transform:translateY(-1px);box-shadow:0 3px 12px rgba(124,92,252,.4);}
+    .inv-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    #pending-card{display:none;background:#1a1a35;border:2px solid #7c5cfc;border-radius:16px;padding:24px;width:100%;max-width:420px;text-align:center;}
+
+    /* ── GAME ── */
+    #game-screen{display:none;flex-direction:column;min-height:100vh;}
+    #top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(13,13,26,.97);border-bottom:1px solid #2e2e5e;position:sticky;top:0;z-index:50;flex-shrink:0;}
+    #turn-indicator{font-size:.9rem;font-weight:900;}
+    #top-bar a{color:#8888aa;font-size:.8rem;text-decoration:none;}
+    #players-bar{display:flex;gap:6px;padding:8px 10px;flex-wrap:wrap;background:#12122a;border-bottom:1px solid #2e2e5e;flex-shrink:0;}
+    .pchip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:2px solid transparent;border-radius:10px;padding:5px 10px;font-size:.78rem;}
+    .pchip.active{background:rgba(255,255,255,.1);}
+    .pchip.bust{opacity:.35;text-decoration:line-through;}
+    .ptok{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:900;color:#fff;flex-shrink:0;}
+    .pmoney{font-weight:700;color:#f5c842;font-size:.82rem;}
+
+    #board-scroll{flex:1;overflow:auto;padding:12px;display:flex;align-items:flex-start;justify-content:center;}
+    #board{width:700px;height:700px;flex-shrink:0;display:grid;grid-template-columns:80px repeat(6,1fr) 80px;grid-template-rows:80px repeat(6,1fr) 80px;border:3px solid #3a3a6e;border-radius:14px;overflow:hidden;background:#16163a;box-shadow:0 0 40px rgba(124,92,252,.2);}
+    .sp{border:1px solid #2e2e5e;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 2px;position:relative;overflow:hidden;transition:filter .15s;}
+    .sp:hover{filter:brightness(1.2);}
+    .sp.active-sp{outline:3px solid #f5c842;outline-offset:-3px;z-index:5;}
+    .sp .cb{width:100%;height:8px;flex-shrink:0;}
+    .sp .si{font-size:1rem;line-height:1;margin:1px 0;}
+    .sp .sn{font-size:.58rem;font-weight:800;color:#e0e0f5;text-align:center;line-height:1.2;padding:0 2px;}
+    .sp .spr{font-size:.52rem;color:#f5c842;font-weight:700;margin-top:1px;}
+    .sp .stoks{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:2px;}
+    .stk{width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.5);flex-shrink:0;}
+    .sp .own-badge{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.5);}
+    .sp.sp-start{background:rgba(92,252,142,.12);}
+    .sp.sp-jail{background:rgba(124,92,252,.1);}
+    .sp.sp-parking{background:rgba(245,200,66,.08);}
+    .sp.sp-gotojail{background:rgba(252,92,92,.1);}
+    .sp.sp-tax{background:rgba(252,92,92,.06);}
+    .sp.sp-chance{background:rgba(196,92,252,.06);}
+    .sp.sp-corner{font-size:.7rem;font-weight:900;}
+    #bc{grid-column:2/8;grid-row:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(124,92,252,.04);padding:10px;}
+    #bc-title{font-size:1rem;font-weight:900;color:#7c5cfc;letter-spacing:.04em;}
+    #dice-row{display:flex;gap:12px;}
+    .die{width:50px;height:50px;border-radius:10px;background:#1a1a35;border:2px solid #7c5cfc;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:3px;padding:6px;}
+    .die.roll-anim{animation:dr .38s ease;}
+    @keyframes dr{0%,100%{transform:rotate(0)}30%{transform:rotate(-14deg)}70%{transform:rotate(14deg)}}
+    .dot{background:#e8e8f5;border-radius:50%;}
+    .dot.h{background:transparent;}
+    #roll-btn{padding:11px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c5cfc,#c45cfc);color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;font-family:inherit;transition:all .2s;}
+    #roll-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(124,92,252,.4);}
+    #roll-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    #my-turn-hint{font-size:.78rem;color:#8888aa;text-align:center;}
+    #log-box{width:100%;max-height:80px;overflow-y:auto;background:rgba(0,0,0,.35);border-radius:8px;padding:6px 10px;font-size:.66rem;color:#8888aa;line-height:1.6;}
+
+    /* Modal */
+    #modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.82);align-items:center;justify-content:center;}
+    #modal.show{display:flex;}
+    .mbox{background:#1a1a35;border:2px solid #7c5cfc;border-radius:18px;padding:28px 22px;max-width:340px;width:92%;text-align:center;}
+    .mbox h3{font-size:1.15rem;font-weight:900;margin-bottom:8px;}
+    .mbox p{color:#8888aa;font-size:.87rem;margin-bottom:14px;line-height:1.6;white-space:pre-line;}
+    .mprice{font-size:1.5rem;font-weight:900;color:#f5c842;margin:8px 0 16px;}
+    .mbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .mbtn{padding:10px 22px;border-radius:10px;border:none;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;}
+    .mb-buy{background:linear-gradient(135deg,#5cfc8e,#2e9e2e);color:#0d1a12;}
+    .mb-skip{background:rgba(255,255,255,.08);color:#8888aa;border:1px solid #2e2e5e;}
+    .mb-ok{background:linear-gradient(135deg,#7c5cfc,#c45cfc);color:#fff;}
+
+    /* Win */
+    #win-screen{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.92);align-items:center;justify-content:center;}
+    #win-screen.show{display:flex;}
+    .wbox{background:#1a1a35;border:2px solid #f5c842;border-radius:18px;padding:36px 28px;max-width:330px;width:92%;text-align:center;}
+    .wbox .wi{font-size:3.5rem;margin-bottom:10px;}
+    .wbox h2{font-size:1.6rem;font-weight:900;margin-bottom:8px;}
+    .wbox p{color:#8888aa;margin-bottom:20px;font-size:.9rem;}
+    .wbtn{padding:12px 26px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c5cfc,#c45cfc);color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;font-family:inherit;margin:4px;}
+
+    /* Invite notif */
+    .notif-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1a1a35;border:2px solid #7c5cfc;border-radius:14px;padding:18px 20px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeIn .3s ease;text-align:center;width:90vw;max-width:360px;}
+    .notif-btns{display:flex;gap:10px;justify-content:center;margin-top:12px;}
+  </style>
+</head>
+<body>
+
+<!-- LOBBY -->
+<div id="lobby-screen">
+  <div style="font-size:3rem">🎲</div>
+  <h1>Mini Monopoly</h1>
+  <p style="color:#8888aa;font-size:.9rem;">Hívj meg egy játékost és kezdjetek el játszani!</p>
+
+  <div class="lobby-card">
+    <h3 style="font-size:.85rem;color:#8888aa;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Online játékosok</h3>
+    <div id="online-list"><div style="color:#8888aa;font-size:.9rem;">Betöltés...</div></div>
+  </div>
+
+  <div id="pending-card">
+    <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
+    <div style="font-weight:700;" id="pending-text">Várom a választ...</div>
+    <button style="margin-top:12px;background:none;border:1px solid #2e2e5e;color:#8888aa;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:inherit;" onclick="cancelInvite()">Mégsem</button>
+  </div>
+
+  <a href="index.html" style="color:#8888aa;font-size:.85rem;">← Vissza a főmenübe</a>
+</div>
+
+<!-- GAME -->
+<div id="game-screen">
+  <div id="top-bar">
+    <a href="index.html">← Főoldal</a>
+    <span id="turn-indicator">–</span>
+    <span id="turn-sub" style="font-size:.72rem;color:#8888aa;"></span>
+  </div>
+  <div id="players-bar"></div>
+  <div id="board-scroll">
+    <div id="board">
+      <div id="bc">
+        <div id="bc-title">🏙️ MINI MONOPOLY</div>
+        <div id="dice-row">
+          <div class="die" id="die1"></div>
+          <div class="die" id="die2"></div>
+        </div>
+        <button id="roll-btn" onclick="rollDice()">🎲 Dobás!</button>
+        <div id="my-turn-hint"></div>
+        <div id="log-box"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="mbox">
+    <h3 id="m-title">–</h3>
+    <p id="m-body">–</p>
+    <div class="mprice" id="m-price" style="display:none"></div>
+    <div class="mbtns" id="m-btns"></div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="win-screen">
+  <div class="wbox">
+    <div class="wi">🏆</div>
+    <h2 id="w-title">Nyertél!</h2>
+    <p id="w-sub"></p>
+    <button class="wbtn" onclick="location.href='monopoly.html'">🔄 Új játék</button>
+    <button class="wbtn" style="background:rgba(124,92,252,.2);border:1px solid #7c5cfc;" onclick="location.href='index.html'">🏠 Főoldal</button>
+  </div>
+</div>
+
+<!-- Meghívó értesítő -->
+<div class="notif-banner" id="inv-notif" style="display:none;">
+  <h3 id="inv-title">Meghívó érkezett!</h3>
+  <p id="inv-text" style="color:#8888aa;font-size:.88rem;"></p>
+  <div class="notif-btns">
+    <button class="inv-btn" onclick="acceptInvite()">Elfogad</button>
+    <button style="background:rgba(255,255,255,.08);color:#8888aa;border:1px solid #2e2e5e;border-radius:8px;padding:7px 14px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;" onclick="declineInvite()">Elutasít</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
+<script src="settings.js"></script>
+<script>
+const SESSION_KEY='doorpuzzle_session';
+const username=localStorage.getItem(SESSION_KEY);
+if(!username){window.location.href='index.html';}
+
+const TIMEOUT_MS=45000;
+const PCOLORS=['#fc5c5c','#5c9efc'];
+const START_MONEY=15000;
+
+const SPACES=[
+  {id:0,type:'start',   name:'START',           icon:'🚀',price:0,   rent:0,   color:''},
+  {id:1,type:'prop',    name:'Kispest',          icon:'🏠',price:1200,rent:200, color:'#fc9e5c'},
+  {id:2,type:'prop',    name:'Kőbánya',          icon:'🏠',price:1400,rent:250, color:'#fc9e5c'},
+  {id:3,type:'chance',  name:'Véletlen',         icon:'❓',price:0,   rent:0,   color:''},
+  {id:4,type:'prop',    name:'Zugló',            icon:'🏠',price:1600,rent:300, color:'#c45cfc'},
+  {id:5,type:'tax',     name:'Adó 2000',         icon:'💸',price:2000,rent:0,   color:''},
+  {id:6,type:'prop',    name:'Keleti p.',        icon:'🚉',price:2000,rent:400, color:'#5c9efc'},
+  {id:7,type:'prop',    name:'Angyalföld',       icon:'🏠',price:1800,rent:350, color:'#c45cfc'},
+  {id:8,type:'chance',  name:'Véletlen',         icon:'❓',price:0,   rent:0,   color:''},
+  {id:9,type:'prop',    name:'Józsefváros',      icon:'🏠',price:2000,rent:400, color:'#c45cfc'},
+  {id:10,type:'jail',   name:'Börtön',           icon:'🔒',price:0,   rent:0,   color:''},
+  {id:11,type:'prop',   name:'Ferencváros',      icon:'🏠',price:2200,rent:450, color:'#5cfc8e'},
+  {id:12,type:'prop',   name:'Balaton',          icon:'🌊',price:2400,rent:500, color:'#5cfc8e'},
+  {id:13,type:'prop',   name:'Közművek',         icon:'⚡',price:1500,rent:0,   color:'#f5c842',utility:true},
+  {id:14,type:'prop',   name:'Kelenföld',        icon:'🏠',price:2600,rent:550, color:'#5cfc8e'},
+  {id:15,type:'parking',name:'Parkoló',          icon:'🅿️',price:0,   rent:0,   color:''},
+  {id:16,type:'prop',   name:'Buda',             icon:'🏰',price:2800,rent:600, color:'#fc5c5c'},
+  {id:17,type:'chance', name:'Véletlen',         icon:'❓',price:0,   rent:0,   color:''},
+  {id:18,type:'prop',   name:'Várhegy',          icon:'🏰',price:3000,rent:650, color:'#fc5c5c'},
+  {id:19,type:'tax',    name:'Luxusadó',         icon:'💸',price:1000,rent:0,   color:''},
+  {id:20,type:'prop',   name:'Nyugati p.',       icon:'🚉',price:2500,rent:500, color:'#5c9efc'},
+  {id:21,type:'gotojail',name:'Börtönbe!',       icon:'👮',price:0,   rent:0,   color:''},
+  {id:22,type:'prop',   name:'Debrecen',         icon:'🏙️',price:3200,rent:700, color:'#7c5cfc'},
+  {id:23,type:'chance', name:'Véletlen',         icon:'❓',price:0,   rent:0,   color:''},
+  {id:24,type:'prop',   name:'Pécs',             icon:'🏙️',price:3400,rent:750, color:'#7c5cfc'},
+  {id:25,type:'prop',   name:'Győr',             icon:'🏙️',price:3600,rent:800, color:'#7c5cfc'},
+  {id:26,type:'prop',   name:'Miskolc',          icon:'🏙️',price:3800,rent:850, color:'#5c9efc'},
+  {id:27,type:'prop',   name:'Belváros',         icon:'🌟',price:4000,rent:1000,color:'#f5c842'},
+];
+
+const GPOS=[
+  {r:8,c:8},{r:8,c:7},{r:8,c:6},{r:8,c:5},{r:8,c:4},{r:8,c:3},{r:8,c:2},{r:8,c:1},
+  {r:7,c:1},{r:6,c:1},{r:5,c:1},{r:4,c:1},{r:3,c:1},{r:2,c:1},{r:1,c:1},
+  {r:1,c:2},{r:1,c:3},{r:1,c:4},{r:1,c:5},{r:1,c:6},{r:1,c:7},{r:1,c:8},
+  {r:2,c:8},{r:3,c:8},{r:4,c:8},{r:5,c:8},{r:6,c:8},{r:7,c:8},
+];
+
+const CHANCE_CARDS=[
+  {text:'Bankbónusz! +3 000 Ft',         eff:{money:3000}},
+  {text:'Adóvisszatérítés! +1 500 Ft',   eff:{money:1500}},
+  {text:'Szerencse nap! +1 000 Ft',      eff:{money:1000}},
+  {text:'Vízvezeték-szerelő: -1 000 Ft',eff:{money:-1000}},
+  {text:'Parkolóbírság: -500 Ft',        eff:{money:-500}},
+  {text:'Lépj a Belvárosra!',            eff:{moveTo:27}},
+  {text:'Vissza a Startra! +2 000 Ft',   eff:{moveTo:0,bonus:2000}},
+  {text:'Fizess 500 Ft-ot mindenkinek!', eff:{payAll:500}},
+];
+
+const DOTS={
+  1:[0,0,0,0,1,0,0,0,0],2:[0,0,1,0,0,0,1,0,0],3:[0,0,1,0,1,0,1,0,0],
+  4:[1,0,1,0,0,0,1,0,1],5:[1,0,1,0,1,0,1,0,1],6:[1,0,1,1,0,1,1,0,1],
+};
+
+// ── Online state ──
+let currentRoomId=null, roomUnsub=null;
+let myPlayerIdx=0; // 0 or 1
+let localPlayers=[], localOwned={}, localCur=0, localLastRoll=[1,1];
+let pendingInviteId=null, inviteUnsub=null, currentInviteId=null;
+let acceptingInv=false;
+
+// Presence
+function setPresence(){
+  db.collection('presence').doc(username).set({name:username,online:true,where:'monopoly',since:Date.now()}).catch(()=>{});
+}
+setPresence();
+setInterval(setPresence,20000);
+window.addEventListener('beforeunload',()=>db.collection('presence').doc(username).delete().catch(()=>{}));
+
+// URL invite check
+const urlParams=new URLSearchParams(window.location.search);
+const urlInviteId=urlParams.get('inviteId');
+if(urlInviteId){
+  currentInviteId=urlInviteId;
+  setTimeout(async()=>{
+    const snap=await db.collection('mono_invites').doc(urlInviteId).get();
+    const inv=snap.data();
+    if(inv&&inv.status==='pending'){
+      showInviteNotif(urlInviteId,inv.from);
+    }
+  },800);
+}
+
+// ── LOBBY ──
+function stringToColor(s){
+  const c=['#7c5cfc','#c45cfc','#fc5c5c','#5cfc8e','#f5c842','#5c9efc'];
+  let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);
+  return c[Math.abs(h)%c.length];
+}
+
+db.collection('presence').onSnapshot(snap=>{
+  const now=Date.now(), list=[];
+  snap.forEach(d=>{
+    const u=d.data();
+    if(u.name!==username&&(now-(u.since||0))<TIMEOUT_MS) list.push(u);
+  });
+  const el=document.getElementById('online-list');
+  if(!el)return;
+  if(list.length===0){el.innerHTML='<div style="color:#8888aa;font-size:.9rem;">Jelenleg senki sincs online.</div>';return;}
+  el.innerHTML=list.map(u=>{
+    const col=stringToColor(u.name);
+    return '<div class="player-row online">'+
+      '<div class="pr-av" style="background:'+col+'">'+u.name[0].toUpperCase()+'</div>'+
+      '<div style="flex:1;font-weight:700;">'+u.name+'</div>'+
+      '<button class="inv-btn" onclick="sendInvite(\''+u.name+'\')">Meghívás</button>'+
+    '</div>';
+  }).join('');
+});
+
+// ── MEGHÍVÓ KÜLDÉS ──
+async function sendInvite(toName){
+  document.getElementById('online-list').parentElement.style.display='none';
+  const pc=document.getElementById('pending-card');
+  pc.style.display='block';
+  document.getElementById('pending-text').textContent=toName+' meghívása...';
+
+  const ref=await db.collection('mono_invites').add({
+    from:username,to:toName,status:'pending',created:Date.now()
+  });
+  pendingInviteId=ref.id;
+
+  inviteUnsub=db.collection('mono_invites').doc(ref.id).onSnapshot(snap=>{
+    const d=snap.data();
+    if(!d)return;
+    if(d.status==='accepted'){
+      if(inviteUnsub){inviteUnsub();inviteUnsub=null;}
+      joinRoom(d.roomId,toName,0);
+    } else if(d.status==='declined'){
+      if(inviteUnsub){inviteUnsub();inviteUnsub=null;}
+      document.getElementById('pending-text').textContent=toName+' elutasította.';
+      setTimeout(()=>{
+        pc.style.display='none';
+        document.getElementById('online-list').parentElement.style.display='block';
+      },2000);
+    }
+  });
+}
+
+function cancelInvite(){
+  if(pendingInviteId) db.collection('mono_invites').doc(pendingInviteId).update({status:'cancelled'});
+  pendingInviteId=null;
+  if(inviteUnsub){inviteUnsub();inviteUnsub=null;}
+  document.getElementById('pending-card').style.display='none';
+  document.getElementById('online-list').parentElement.style.display='block';
+}
+
+// ── MEGHÍVÓ FOGADÁS ──
+db.collection('mono_invites').where('to','==',username).onSnapshot(snap=>{
+  snap.docChanges().forEach(ch=>{
+    if(ch.type==='added'){
+      const inv=ch.doc.data();
+      if(inv.status!=='pending')return;
+      if(Date.now()-(inv.created||0)>30000)return;
+      showInviteNotif(ch.doc.id,inv.from);
+    }
+  });
+});
+
+function showInviteNotif(invId,fromName){
+  currentInviteId=invId;
+  document.getElementById('inv-title').textContent=fromName+' Monopoly játékra hív!';
+  document.getElementById('inv-text').textContent='Magyar városok — elfogadod?';
+  document.getElementById('inv-notif').style.display='block';
+  setTimeout(()=>{if(document.getElementById('inv-notif').style.display!=='none')declineInvite();},30000);
+}
+
+async function acceptInvite(){
+  if(acceptingInv)return;
+  acceptingInv=true;
+  document.getElementById('inv-notif').style.display='none';
+  const snap=await db.collection('mono_invites').doc(currentInviteId).get();
+  const inv=snap.data();
+  if(!inv||inv.status!=='pending'){acceptingInv=false;return;}
+
+  // Szoba létrehozása
+  const initState=createInitialState(inv.from,username);
+  const roomRef=await db.collection('mono_rooms').add(initState);
+  await db.collection('mono_invites').doc(currentInviteId).update({status:'accepted',roomId:roomRef.id});
+
+  currentInviteId=null;acceptingInv=false;
+  joinRoom(roomRef.id,inv.from,1);
+}
+
+function declineInvite(){
+  document.getElementById('inv-notif').style.display='none';
+  if(currentInviteId){
+    db.collection('mono_invites').doc(currentInviteId).update({status:'declined'});
+    currentInviteId=null;
+  }
+}
+
+// ── GAME STATE ──
+function createInitialState(p0name,p1name){
+  return {
+    players:[
+      {name:p0name,color:PCOLORS[0],pos:0,money:START_MONEY,inJail:false,jailTurns:0,bankrupt:false,freeCard:false},
+      {name:p1name,color:PCOLORS[1],pos:0,money:START_MONEY,inJail:false,jailTurns:0,bankrupt:false,freeCard:false},
+    ],
+    cur:0,
+    owned:{},
+    lastRoll:[1,1],
+    status:'playing',
+    pendingAction:null, // { type, pidx, spaceId, data }
+    log:[],
+    winner:null,
+  };
+}
+
+// ── JOIN ROOM ──
+function joinRoom(roomId,oppName,myIdx){
+  currentRoomId=roomId;
+  myPlayerIdx=myIdx;
+  document.getElementById('lobby-screen').style.display='none';
+  document.getElementById('game-screen').style.display='flex';
+  buildBoard();
+  setTimeout(()=>{const bs=document.getElementById('board-scroll');bs.scrollLeft=(bs.scrollWidth-bs.clientWidth)/2;},100);
+
+  roomUnsub=db.collection('mono_rooms').doc(roomId).onSnapshot(snap=>{
+    const room=snap.data();
+    if(!room)return;
+    localPlayers=room.players;
+    localOwned=room.owned||{};
+    localCur=room.cur;
+    localLastRoll=room.lastRoll||[1,1];
+    renderAll(room);
+    if(room.status==='finished'&&room.winner!==null){
+      showWin(room.players[room.winner]);
+    }
+    if(room.pendingAction&&room.pendingAction.forPlayer===myPlayerIdx){
+      handlePendingAction(room.pendingAction,room);
+    }
+  });
+}
+
+// ── RENDER ──
+function buildBoard(){
+  const board=document.getElementById('board');
+  board.querySelectorAll('.sp').forEach(s=>s.remove());
+  SPACES.forEach((sp,i)=>{
+    const g=GPOS[i];
+    const div=document.createElement('div');
+    div.id='sp-'+i;
+    const isCorner=(i===0||i===7||i===14||i===21);
+    div.className='sp sp-'+sp.type+(isCorner?' sp-corner':'');
+    div.style.gridRow=g.r;div.style.gridColumn=g.c;
+    let html='';
+    if(sp.color)html+='<div class="cb" style="background:'+sp.color+'"></div>';
+    html+='<div class="si">'+sp.icon+'</div>';
+    html+='<div class="sn">'+sp.name+'</div>';
+    if(sp.price>0)html+='<div class="spr">'+sp.price.toLocaleString()+'Ft</div>';
+    html+='<div class="stoks" id="tok-'+i+'"></div>';
+    html+='<div class="own-badge" id="own-'+i+'" style="display:none"></div>';
+    div.innerHTML=html;
+    board.appendChild(div);
+  });
+}
+
+function renderAll(room){
+  renderBar(room);
+  renderTokens(room);
+  renderOwned(room);
+  renderDice(room.lastRoll||[1,1]);
+  renderLogs(room.log||[]);
+  updateTurnUI(room);
+}
+
+function renderBar(room){
+  const bar=document.getElementById('players-bar');
+  bar.innerHTML='';
+  room.players.forEach((p,i)=>{
+    const c=document.createElement('div');
+    c.className='pchip'+(i===room.cur?' active':'')+(p.bankrupt?' bust':'');
+    c.style.borderColor=i===room.cur?p.color:'transparent';
+    c.innerHTML='<div class="ptok" style="background:'+p.color+'">'+p.name[0].toUpperCase()+'</div>'+
+      '<div><div style="font-size:.7rem;font-weight:700;">'+p.name+'</div>'+
+      '<div class="pmoney">'+p.money.toLocaleString()+' Ft</div></div>';
+    bar.appendChild(c);
+  });
+}
+
+function renderTokens(room){
+  document.querySelectorAll('.stoks').forEach(el=>el.innerHTML='');
+  document.querySelectorAll('.sp').forEach(el=>el.classList.remove('active-sp'));
+  room.players.forEach((p,i)=>{
+    if(p.bankrupt)return;
+    const spot=document.getElementById('tok-'+p.pos);
+    if(!spot)return;
+    const t=document.createElement('div');
+    t.className='stk';t.style.background=p.color;t.title=p.name;
+    spot.appendChild(t);
+  });
+  const sp=document.getElementById('sp-'+room.players[room.cur].pos);
+  if(sp)sp.classList.add('active-sp');
+}
+
+function renderOwned(room){
+  const owned=room.owned||{};
+  // Clear
+  document.querySelectorAll('.own-badge').forEach(el=>{el.style.display='none';});
+  Object.entries(owned).forEach(([sid,pidx])=>{
+    const el=document.getElementById('own-'+sid);
+    if(el){el.style.display='block';el.style.background=room.players[pidx].color;}
+  });
+}
+
+function renderDice(v){
+  [0,1].forEach(di=>{
+    const die=document.getElementById('die'+(di+1));
+    die.innerHTML='';
+    DOTS[v[di]].forEach(on=>{
+      const d=document.createElement('div');
+      d.className='dot'+(on?'':' h');
+      die.appendChild(d);
+    });
+  });
+}
+
+function renderLogs(logs){
+  const a=document.getElementById('log-box');
+  a.innerHTML=logs.slice(-20).map(l=>'<div>'+l+'</div>').join('');
+  a.scrollTop=a.scrollHeight;
+}
+
+function updateTurnUI(room){
+  const p=room.players[room.cur];
+  const ti=document.getElementById('turn-indicator');
+  ti.textContent=p.name+' köre';
+  ti.style.color=p.color;
+  document.getElementById('turn-sub').textContent=p.inJail?'🔒 Börtönben':'';
+  const isMyTurn=(room.cur===myPlayerIdx);
+  const hint=document.getElementById('my-turn-hint');
+  const btn=document.getElementById('roll-btn');
+  if(isMyTurn&&room.status==='playing'&&!room.pendingAction){
+    btn.disabled=false;
+    hint.textContent='';
+  } else {
+    btn.disabled=true;
+    hint.textContent=isMyTurn?'Várd meg a modal bezárását...':p.name+' dob...';
+  }
+}
+
+// ── ROLL ──
+async function rollDice(){
+  if(!currentRoomId)return;
+  const snap=await db.collection('mono_rooms').doc(currentRoomId).get();
+  const room=snap.data();
+  if(!room||room.cur!==myPlayerIdx||room.pendingAction)return;
+  document.getElementById('roll-btn').disabled=true;
+
+  const d1e=document.getElementById('die1'),d2e=document.getElementById('die2');
+  d1e.classList.add('roll-anim');d2e.classList.add('roll-anim');
+  await new Promise(r=>setTimeout(r,400));
+  d1e.classList.remove('roll-anim');d2e.classList.remove('roll-anim');
+
+  const p=room.players[myPlayerIdx];
+  const d1=r1(),d2=r1();
+
+  if(p.inJail){
+    await handleJailRoll(room,d1,d2);return;
+  }
+
+  const steps=d1+d2;
+  const oldPos=p.pos;
+  const newPos=(p.pos+steps)%SPACES.length;
+  const passedStart=newPos<oldPos&&oldPos!==0;
+
+  const updPlayers=[...room.players];
+  updPlayers[myPlayerIdx]={...p,pos:newPos};
+  if(passedStart) updPlayers[myPlayerIdx].money+=2000;
+
+  const newLog=[...(room.log||[])];
+  newLog.push(p.name+' dobott: '+d1+'+'+d2+'='+(steps)+(passedStart?' (+2 000 Ft START)':''));
+
+  // Determine action
+  const sp=SPACES[newPos];
+  const action=computeAction(sp,newPos,myPlayerIdx,{...room,players:updPlayers});
+
+  await db.collection('mono_rooms').doc(currentRoomId).update({
+    players:updPlayers,
+    lastRoll:[d1,d2],
+    log:newLog,
+    pendingAction:action,
+  });
+}
+
+async function handleJailRoll(room,d1,d2){
+  const p={...room.players[myPlayerIdx]};
+  const newLog=[...(room.log||[])];
+  const updPlayers=[...room.players];
+  let action=null;
+
+  p.jailTurns=(p.jailTurns||0)+1;
+  if(p.jailTurns>=3){
+    p.inJail=false;p.jailTurns=0;p.money-=1000;
+    newLog.push(p.name+' kifizette 1 000 Ft börtönbüntetést és kiszabadult!');
+    const newPos=(p.pos+d1+d2)%SPACES.length;
+    if(newPos<p.pos&&p.pos!==0) p.money+=2000;
+    p.pos=newPos;
+    action=computeAction(SPACES[newPos],newPos,myPlayerIdx,{...room,players:updPlayers});
+  } else if(p.freeCard){
+    p.freeCard=false;p.inJail=false;p.jailTurns=0;
+    newLog.push(p.name+' felhasználta a kiszabadulós kártyát!');
+    const newPos=(p.pos+d1+d2)%SPACES.length;
+    p.pos=newPos;
+    action=computeAction(SPACES[newPos],newPos,myPlayerIdx,{...room,players:updPlayers});
+  } else if(d1===d2){
+    p.inJail=false;p.jailTurns=0;
+    newLog.push(p.name+' dublőzt dobott és kiszabadult! ('+d1+'+'+d2+')');
+    const newPos=(p.pos+d1+d2)%SPACES.length;
+    p.pos=newPos;
+    action=computeAction(SPACES[newPos],newPos,myPlayerIdx,{...room,players:updPlayers});
+  } else {
+    newLog.push(p.name+' nem szabadult ki. ('+d1+'+'+d2+')');
+    action={type:'endTurn',forPlayer:myPlayerIdx};
+  }
+
+  updPlayers[myPlayerIdx]=p;
+  await db.collection('mono_rooms').doc(currentRoomId).update({
+    players:updPlayers,lastRoll:[d1,d2],log:newLog,pendingAction:action
+  });
+}
+
+function computeAction(sp,spaceId,pidx,room){
+  const p=room.players[pidx];
+  if(sp.type==='start'||sp.type==='parking'||sp.type==='jail'){
+    return {type:'endTurn',forPlayer:pidx};
+  }
+  if(sp.type==='gotojail'){
+    return {type:'gotojail',forPlayer:pidx};
+  }
+  if(sp.type==='tax'){
+    return {type:'tax',forPlayer:pidx,spaceId,amount:sp.price};
+  }
+  if(sp.type==='chance'){
+    const card=CHANCE_CARDS[Math.floor(Math.random()*CHANCE_CARDS.length)];
+    return {type:'chance',forPlayer:pidx,card};
+  }
+  if(sp.type==='prop'){
+    const ow=room.owned[spaceId];
+    if(ow===undefined) return {type:'buyOffer',forPlayer:pidx,spaceId};
+    if(ow===pidx)      return {type:'ownLand',forPlayer:pidx,spaceId};
+    const rent=sp.utility?(room.lastRoll[0]+room.lastRoll[1])*4:sp.rent;
+    return {type:'payRent',forPlayer:pidx,spaceId,to:ow,amount:rent};
+  }
+  return {type:'endTurn',forPlayer:pidx};
+}
+
+// ── HANDLE PENDING ACTION (shown to the correct player) ──
+function handlePendingAction(action,room){
+  const pidx=action.forPlayer;
+  const p=room.players[pidx];
+  const sp=action.spaceId!==undefined?SPACES[action.spaceId]:null;
+
+  if(action.type==='endTurn'){
+    resolveEndTurn(room);return;
+  }
+  if(action.type==='ownLand'){
+    addLog(p.name+' saját ingatlanán áll: '+sp.name);
+    resolveEndTurn(room);return;
+  }
+  if(action.type==='gotojail'){
+    showM('👮 Börtönbe kerültél!',p.name+' bekerült a börtönbe!\n3 körön belül kell kiszabadulni.',null,[
+      {t:'OK',c:'mb-ok',fn(){closeM();applyGotojail(room,pidx);}}
+    ]);return;
+  }
+  if(action.type==='tax'){
+    showM('💸 '+SPACES[action.spaceId].name,p.name+' adót fizet.',action.amount.toLocaleString()+' Ft',[
+      {t:'OK',c:'mb-ok',fn(){closeM();applyTax(room,pidx,action.amount);}}
+    ]);return;
+  }
+  if(action.type==='chance'){
+    const c=action.card;
+    showM('❓ Véletlen kártya',c.text,null,[
+      {t:'OK',c:'mb-ok',fn(){closeM();applyChance(room,pidx,c);}}
+    ]);return;
+  }
+  if(action.type==='buyOffer'){
+    const canBuy=p.money>=sp.price;
+    const btns=[
+      {t:'❌ Kihagyom',c:'mb-skip',fn(){closeM();resolveEndTurn(room);}},
+    ];
+    if(canBuy) btns.unshift({t:'✅ Megveszem',c:'mb-buy',fn(){closeM();applyBuy(room,pidx,action.spaceId);}});
+    showM(sp.icon+' '+sp.name,'Megveszed?\nBérleti díj: '+(sp.utility?'dobás×4':sp.rent.toLocaleString()+' Ft'),sp.price.toLocaleString()+' Ft',btns);
+    return;
+  }
+  if(action.type==='payRent'){
+    const owner=room.players[action.to];
+    showM('🏠 Bérleti díj',p.name+' fizet '+owner.name+'-nak\n('+SPACES[action.spaceId].name+')',action.amount.toLocaleString()+' Ft',[
+      {t:'OK',c:'mb-ok',fn(){closeM();applyRent(room,pidx,action.to,action.amount);}}
+    ]);return;
+  }
+}
+
+// ── APPLY ACTIONS ──
+async function applyGotojail(room,pidx){
+  const updPlayers=[...room.players];
+  updPlayers[pidx]={...updPlayers[pidx],pos:10,inJail:true,jailTurns:0};
+  const newLog=[...(room.log||[])];
+  newLog.push(room.players[pidx].name+' bekerült a börtönbe!');
+  await commitUpdate({players:updPlayers,log:newLog},room,pidx);
+}
+
+async function applyTax(room,pidx,amount){
+  const updPlayers=[...room.players];
+  updPlayers[pidx]={...updPlayers[pidx],money:updPlayers[pidx].money-amount};
+  const newLog=[...(room.log||[])];
+  newLog.push(room.players[pidx].name+' adót fizetett: '+amount.toLocaleString()+' Ft');
+  await commitUpdate({players:updPlayers,log:newLog},room,pidx);
+}
+
+async function applyChance(room,pidx,card){
+  const updPlayers=[...room.players];
+  const p={...updPlayers[pidx]};
+  const e=card.eff;
+  const newLog=[...(room.log||[])];
+  newLog.push(p.name+' véletlen: '+card.text);
+  if(e.money){p.money+=e.money;}
+  if(e.moveTo!==undefined){if(e.bonus)p.money+=e.bonus;p.pos=e.moveTo;}
+  if(e.payAll){
+    room.players.forEach((_,i)=>{if(i!==pidx&&!updPlayers[i].bankrupt){p.money-=e.payAll;updPlayers[i]={...updPlayers[i],money:updPlayers[i].money+e.payAll};}});
+  }
+  updPlayers[pidx]=p;
+  const extra=e.moveTo!==undefined?computeAction(SPACES[e.moveTo],e.moveTo,pidx,{...room,players:updPlayers,owned:room.owned||{}}):null;
+  await commitUpdate({players:updPlayers,log:newLog},room,pidx,extra);
+}
+
+async function applyBuy(room,pidx,spaceId){
+  const updPlayers=[...room.players];
+  const sp=SPACES[spaceId];
+  updPlayers[pidx]={...updPlayers[pidx],money:updPlayers[pidx].money-sp.price};
+  const updOwned={...(room.owned||{}),[spaceId]:pidx};
+  const newLog=[...(room.log||[])];
+  newLog.push(room.players[pidx].name+' megvette: '+sp.name+' ('+sp.price.toLocaleString()+' Ft)');
+  await commitUpdate({players:updPlayers,owned:updOwned,log:newLog},room,pidx);
+}
+
+async function applyRent(room,pidx,toIdx,amount){
+  const updPlayers=[...room.players];
+  updPlayers[pidx]={...updPlayers[pidx],money:updPlayers[pidx].money-amount};
+  updPlayers[toIdx]={...updPlayers[toIdx],money:updPlayers[toIdx].money+amount};
+  const newLog=[...(room.log||[])];
+  newLog.push(room.players[pidx].name+' bérleti díjat fizetett '+room.players[toIdx].name+'-nak: '+amount.toLocaleString()+' Ft');
+  await commitUpdate({players:updPlayers,log:newLog},room,pidx);
+}
+
+async function resolveEndTurn(room){
+  const next=1-room.cur;
+  await db.collection('mono_rooms').doc(currentRoomId).update({
+    cur:next,pendingAction:null
+  });
+}
+
+async function commitUpdate(updates,room,pidx,extraAction){
+  const updPlayers=updates.players||room.players;
+  // Bust check
+  let winner=null;
+  const bust=updPlayers.findIndex(p=>!p.bankrupt&&p.money<0);
+  if(bust!==-1){
+    updPlayers[bust]={...updPlayers[bust],bankrupt:true,money:0};
+    // Remove their properties
+    const updOwned={...(updates.owned||room.owned||{})};
+    Object.keys(updOwned).forEach(s=>{if(updOwned[s]===bust)delete updOwned[s];});
+    updates.owned=updOwned;
+    const alive=updPlayers.filter(p=>!p.bankrupt);
+    if(alive.length===1){
+      const wi=updPlayers.findIndex(p=>!p.bankrupt);
+      const newLog=[...(updates.log||room.log||[])];
+      newLog.push('💀 '+updPlayers[bust].name+' csődbe ment! '+updPlayers[wi].name+' nyert!');
+      await db.collection('mono_rooms').doc(currentRoomId).update({
+        ...updates,players:updPlayers,log:newLog,pendingAction:null,status:'finished',winner:wi
+      });
+      return;
+    }
+    const newLog=[...(updates.log||room.log||[])];
+    newLog.push('💀 '+updPlayers[bust].name+' csődbe ment és kiesett!');
+    updates.log=newLog;
+  }
+
+  if(extraAction){
+    await db.collection('mono_rooms').doc(currentRoomId).update({
+      ...updates,players:updPlayers,pendingAction:extraAction
+    });
+  } else {
+    // End turn
+    const next=1-room.cur;
+    await db.collection('mono_rooms').doc(currentRoomId).update({
+      ...updates,players:updPlayers,cur:next,pendingAction:null
+    });
+  }
+}
+
+function addLog(msg){
+  // local only for ownLand etc.
+  const a=document.getElementById('log-box');
+  a.innerHTML+='<div>'+msg+'</div>';
+  a.scrollTop=a.scrollHeight;
+}
+
+function r1(){return Math.ceil(Math.random()*6);}
+
+function showM(title,body,price,btns){
+  document.getElementById('m-title').textContent=title;
+  document.getElementById('m-body').textContent=body;
+  const pe=document.getElementById('m-price');
+  if(price){pe.style.display='block';pe.textContent=price;}else pe.style.display='none';
+  const be=document.getElementById('m-btns');be.innerHTML='';
+  btns.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='mbtn '+b.c;btn.textContent=b.t;btn.onclick=b.fn;
+    be.appendChild(btn);
+  });
+  document.getElementById('modal').classList.add('show');
+}
+function closeM(){document.getElementById('modal').classList.remove('show');}
+
+function showWin(p){
+  document.getElementById('w-title').textContent=p.name+' nyert! 🎉';
+  document.getElementById('w-sub').textContent='Gratulálok '+p.name+'! Ellenfeledet tönkretettél.';
+  document.getElementById('win-screen').classList.add('show');
+}
+</script>
+</body>
+</html>
