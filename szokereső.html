@@ -158,6 +158,12 @@
 
     <div id="sel-feedback" style="text-align:center;font-size:.9rem;font-weight:700;min-height:22px;margin-bottom:10px;"></div>
 
+    <!-- Keresendő szavak listája -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">Keresendő szavak:</div>
+      <div id="target-words-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+
     <div class="words-panels">
       <div class="words-panel mine">
         <div class="wp-name" style="color:var(--accent);">Te</div>
@@ -508,6 +514,7 @@ function joinRoom(roomId, oppName) {
     renderGrid(room.grid, room.foundWords || {});
     renderScores(room.scores || {}, oppName);
     renderWordLists(room.foundWords || {}, oppName);
+    renderTargetWords(room.foundWords || {}, null);
 
     const badge = document.getElementById('round-diff-badge');
     if (badge) badge.textContent = DIFF_CONFIG[room.diff]?.label || '';
@@ -638,6 +645,19 @@ async function checkWord(word) {
   const fb = document.getElementById('sel-feedback');
   if (word.length < 2) return;
 
+  const reversed = word.split('').reverse().join('');
+
+  // Csak az előre elrejtett szavakat fogadja el (előre és visszafelé is)
+  const found = hiddenWords.find(w => w.word === word || w.word === reversed);
+  if (!found) {
+    fb.textContent = '❌ Nem keresett szó';
+    fb.style.color = 'var(--red)';
+    setTimeout(() => { fb.textContent = ''; }, 1200);
+    return;
+  }
+
+  const actualWord = found.word;
+
   // Szoba lekérése
   const roomSnap = await db.collection('sw_rooms').doc(currentRoomId).get();
   const room = roomSnap.data();
@@ -645,33 +665,44 @@ async function checkWord(word) {
   const foundWords = room.foundWords || {};
 
   // Már megtalálta valaki?
-  if (foundWords[word]) {
-    fb.textContent = '⚠️ ' + word + ' — már megtalálva!';
+  if (foundWords[actualWord]) {
+    fb.textContent = '⚠️ ' + actualWord + ' — már megtalálva!';
     fb.style.color = 'var(--gold)';
     setTimeout(() => { fb.textContent = ''; }, 1500);
     return;
   }
 
-  // Szóellenőrzés: csak alapszabályok (magyar betűk, min 2 karakter, nem egyforma betűk)
-  const cleanWord = word.toUpperCase().trim();
-  if (cleanWord.length < 2) return;
-  if (!/^[A-ZÁÉÍÓÖŐÚÜŰ]+$/.test(cleanWord)) {
-    fb.textContent = '❌ Érvénytelen szó';
-    fb.style.color = 'var(--red)';
-    setTimeout(() => { fb.textContent = ''; }, 1500);
-    return;
-  }
-
-  // Mentés Firestore-ba — minden érvényes szó elfogadva
-  myFoundWords.push(word);
-  fb.textContent = '✅ ' + word + ' — megtalálva!';
+  // Megvan!
+  myFoundWords.push(actualWord);
+  fb.textContent = '✅ ' + actualWord + ' — megtalálva! +1 pont';
   fb.style.color = 'var(--green)';
   setTimeout(() => { fb.textContent = ''; }, 1500);
 
+  // Szólista frissítése
+  renderTargetWords(foundWords, actualWord);
+
   await db.collection('sw_rooms').doc(currentRoomId).update({
-    ['foundWords.' + word]: username,
+    ['foundWords.' + actualWord]: username,
     ['scores.' + username]: firebase.firestore.FieldValue.increment(1)
   });
+}
+
+// ── Keresendő szavak megjelenítése ──
+function renderTargetWords(foundWords, justFound) {
+  const el = document.getElementById('target-words-list');
+  if (!el || hiddenWords.length === 0) return;
+  el.innerHTML = hiddenWords.map(w => {
+    const isMine = foundWords[w.word] === username || w.word === justFound;
+    const isOpp = foundWords[w.word] && foundWords[w.word] !== username;
+    const done = isMine || isOpp;
+    return '<span style="' +
+      'padding:3px 10px;border-radius:999px;font-size:.8rem;font-weight:700;' +
+      'background:' + (isMine ? 'rgba(92,252,142,0.2)' : isOpp ? 'rgba(196,92,252,0.2)' : 'var(--card)') + ';' +
+      'color:' + (isMine ? 'var(--green)' : isOpp ? 'var(--accent2)' : 'var(--text)') + ';' +
+      'border:1px solid ' + (isMine ? 'var(--green)' : isOpp ? 'var(--accent2)' : 'var(--border)') + ';' +
+      'text-decoration:' + (done ? 'line-through' : 'none') + ';' +
+      '">' + w.word + '</span>';
+  }).join('');
 }
 
 // ── Timer ──
