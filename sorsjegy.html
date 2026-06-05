@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Játékok – Kaparós Sorsjegy</title>
+  <link rel="stylesheet" href="style.css?v=9" />
+  <style>
+    .scratch-wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+
+    /* Fejléc kártya */
+    .scratch-hero {
+      text-align: center;
+      padding: 32px 20px 24px;
+    }
+    .scratch-hero .sh-icon { font-size: 3.5rem; margin-bottom: 10px; }
+    .scratch-hero h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 6px; }
+    .scratch-hero p { color: var(--muted); font-size: .92rem; }
+
+    /* Cooldown kártya */
+    .cooldown-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .cooldown-card .cd-icon { font-size: 3rem; margin-bottom: 12px; }
+    .cooldown-card h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+    .cooldown-card .cd-timer { font-size: 2rem; font-weight: 900; color: var(--gold); margin: 12px 0; }
+
+    /* Sorsjegy */
+    .ticket-card {
+      background: var(--card);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 32px rgba(124,92,252,0.15);
+    }
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .ticket-header .th-title { font-weight: 900; font-size: 1.1rem; color: var(--accent); }
+    .ticket-header .th-hint { font-size: .78rem; color: var(--muted); }
+
+    /* Kaparós rács */
+    .scratch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .scratch-cell {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: crosshair;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* A szimbólum alatta */
+    .scratch-symbol {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+      font-weight: 900;
+      z-index: 1;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .scratch-symbol.revealed { transform: scale(1.1); }
+    /* A kaparós réteg */
+    .scratch-cover {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: 12px;
+      touch-action: none;
+    }
+
+    /* Kaparás progress */
+    .scratch-progress {
+      text-align: center;
+      color: var(--muted);
+      font-size: .85rem;
+      margin-bottom: 16px;
+    }
+    .scratch-progress span { color: var(--accent); font-weight: 700; }
+
+    /* Eredmény banner */
+    .result-banner {
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 12px;
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    .result-banner.win {
+      background: linear-gradient(135deg, rgba(92,252,142,0.15), rgba(245,200,66,0.15));
+      border: 2px solid var(--green);
+    }
+    .result-banner.lose {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+    }
+    .result-banner .rb-icon { font-size: 2.8rem; margin-bottom: 8px; }
+    .result-banner .rb-title { font-size: 1.3rem; font-weight: 900; margin-bottom: 6px; }
+    .result-banner .rb-sub { font-size: .88rem; color: var(--muted); }
+    .result-banner .rb-reward { font-size: 1.6rem; font-weight: 900; color: var(--gold); margin: 10px 0; }
+
+    /* Díjak táblázat */
+    .prizes-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .prizes-card h3 { font-size: .92rem; font-weight: 800; margin-bottom: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .prize-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .prize-row:last-child { border-bottom: none; }
+    .prize-row .pr-sym { font-size: 1.6rem; width: 36px; text-align: center; }
+    .prize-row .pr-name { flex: 1; font-weight: 700; font-size: .9rem; }
+    .prize-row .pr-reward { color: var(--gold); font-weight: 800; font-size: .88rem; }
+
+    @keyframes popIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes shine {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .winner-glow {
+      animation: shine 1.5s linear infinite;
+      background: linear-gradient(90deg, var(--gold), #fff, var(--gold));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">[ Online Játékok ]</div>
+  <nav class="nav-links">
+    <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
+    <a href="index.html">Főoldal</a>
+    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙ Beállítások</button>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">Kilépés</button>
+  </nav>
+</header>
+
+<div class="scratch-wrap">
+
+  <div class="scratch-hero">
+    <div class="sh-icon">🎟️</div>
+    <h1>Kaparós Sorsjegy</h1>
+    <p>Kapard le a mezőket — ha 3 egyforma szimbólum van, nyertél!</p>
+  </div>
+
+  <!-- Cooldown állapot (ha már játszott ma) -->
+  <div id="cooldown-screen" style="display:none;">
+    <div class="cooldown-card">
+      <div class="cd-icon">⏳</div>
+      <h2>Holnap játszhatsz újra!</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:8px;">Naponta egyszer kaparhatod meg a sorsjegyed.</p>
+      <div class="cd-timer" id="cd-timer">--:--:--</div>
+      <p style="color:var(--muted);font-size:.8rem;">Következő sorsjegy</p>
+    </div>
+  </div>
+
+  <!-- Sorsjegy -->
+  <div id="ticket-screen" style="display:none;">
+    <div class="ticket-card">
+      <div class="ticket-header">
+        <div class="th-title">🎟️ Mai sorsjegyed</div>
+        <div class="th-hint">Kaparj ujjal!</div>
+      </div>
+
+      <div class="scratch-grid" id="scratch-grid"></div>
+
+      <div class="scratch-progress" id="scratch-progress">
+        <span id="revealed-count">0</span> / 9 mező felderítve
+      </div>
+
+      <div id="result-area"></div>
+    </div>
+  </div>
+
+  <!-- Díjak -->
+  <div class="prizes-card">
+    <h3>Lehetséges nyeremények</h3>
+    <div class="prize-row">
+      <div class="pr-sym">💎</div>
+      <div class="pr-name">3× Gyémánt</div>
+      <div class="pr-reward">+50 XP</div>
+    </div>
+    <div class="prize-row">
+      <div class="pr-sym">⭐</div>
+      <div class="pr-name">3× Csillag</div>
+      <div class="pr-reward">+30 XP</div>
+    </div>
+    <div class="prize-row">
+      <div class="pr-sym">🍀</div>
+      <div class="pr-name">3× Lóhere</div>
+      <div class="pr-reward">+20 XP</div>
+    </div>
+    <div class="prize-row">
+      <div class="pr-sym">🎯</div>
+      <div class="pr-name">3× Célpont</div>
+      <div class="pr-reward">+15 XP</div>
+    </div>
+    <div class="prize-row">
+      <div class="pr-sym">🔥</div>
+      <div class="pr-name">3× Tűz</div>
+      <div class="pr-reward">+10 XP</div>
+    </div>
+    <div class="prize-row" style="opacity:.6;">
+      <div class="pr-sym">—</div>
+      <div class="pr-name">Nincs egyezés</div>
+      <div class="pr-reward">Holnap újra!</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
+<script src="settings.js"></script>
+<script src="hamburger.js"></script>
+<script>
+const SESSION_KEY = 'doorpuzzle_session';
+const username = localStorage.getItem(SESSION_KEY);
+if (!username) { window.location.href = 'index.html'; }
+document.getElementById('nav-user').textContent = username;
+function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
+
+// Presence
+db.collection('presence').doc(username).set({ name: username, online: true, where: 'sorsjegy', since: Date.now() }).catch(()=>{});
+window.addEventListener('beforeunload', () => db.collection('presence').doc(username).delete().catch(()=>{}));
+
+// ── Szimbólumok és díjak ──
+const SYMBOLS = [
+  { sym: '💎', xp: 50, label: 'Gyémánt jackpot!' },
+  { sym: '⭐', xp: 30, label: 'Csillagos nyeremény!' },
+  { sym: '🍀', xp: 20, label: 'Szerencsés lóhere!' },
+  { sym: '🎯', xp: 15, label: 'Célba értél!' },
+  { sym: '🔥', xp: 10, label: 'Tüzes nyeremény!' },
+];
+// 9 szimbólum generálása: 1 db 3-mas + random többi
+function generateTicketSymbols() {
+  // Véletlenszerű: kb. 30% esély nyerésre
+  const willWin = Math.random() < 0.30;
+  let cells = [];
+
+  if (willWin) {
+    // Válassz egy nyerő szimbólumot
+    const winner = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+    // 3 egyforma bekerül
+    cells = [winner.sym, winner.sym, winner.sym];
+    // Töltsd ki a maradék 6 helyet úgy hogy ne legyen több 3-mas
+    const others = SYMBOLS.map(s => s.sym).filter(s => s !== winner.sym);
+    while (cells.length < 9) {
+      const s = others[Math.floor(Math.random() * others.length)];
+      // Max 2 azonos ezekből
+      const cnt = cells.filter(c => c === s).length;
+      if (cnt < 2) cells.push(s);
+    }
+  } else {
+    // Vesztes: maximum 2 egyforma bármely szimbólumból
+    const pool = SYMBOLS.map(s => s.sym);
+    while (cells.length < 9) {
+      const s = pool[Math.floor(Math.random() * pool.length)];
+      const cnt = cells.filter(c => c === s).length;
+      if (cnt < 2) cells.push(s);
+    }
+    // Biztonsági check: ha mégis 3 egyforma van, cseréld le az egyiket
+    for (const sym of pool) {
+      while (cells.filter(c => c === sym).length >= 3) {
+        const idx = cells.lastIndexOf(sym);
+        const alt = pool.filter(s => s !== sym && cells.filter(c => c === s).length < 2);
+        if (alt.length === 0) break;
+        cells[idx] = alt[0];
+      }
+    }
+  }
+
+  // Keverés
+  for (let i = cells.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cells[i], cells[j]] = [cells[j], cells[i]];
+  }
+  return cells;
+}
+
+function checkWinner(cells) {
+  for (const s of SYMBOLS) {
+    if (cells.filter(c => c === s.sym).length >= 3) return s;
+  }
+  return null;
+}
+
+// ── Cooldown kezelés ──
+const SCRATCH_KEY = 'scratch_last_' + username;
+
+function getLastScratch() {
+  return parseInt(localStorage.getItem(SCRATCH_KEY) || '0');
+}
+function setLastScratch() {
+  localStorage.setItem(SCRATCH_KEY, Date.now().toString());
+}
+function getMsUntilNextScratch() {
+  const last = getLastScratch();
+  if (!last) return 0;
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  return Math.max(0, midnight.getTime() - Date.now());
+}
+function isCooldown() {
+  const last = getLastScratch();
+  if (!last) return false;
+  // Cooldown: következő éjfél
+  const lastDate = new Date(last);
+  const today = new Date();
+  return lastDate.toDateString() === today.toDateString();
+}
+
+// ── Canvas kaparás ──
+let revealedCells = 0;
+let ticketCells = [];
+let resultShown = false;
+
+function buildTicket() {
+  ticketCells = generateTicketSymbols();
+  const grid = document.getElementById('scratch-grid');
+  grid.innerHTML = '';
+  revealedCells = 0;
+  resultShown = false;
+  document.getElementById('revealed-count').textContent = '0';
+  document.getElementById('result-area').innerHTML = '';
+
+  ticketCells.forEach((sym, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'scratch-cell';
+    cell.dataset.idx = idx;
+
+    // Szimbólum réteg
+    const symDiv = document.createElement('div');
+    symDiv.className = 'scratch-symbol';
+    symDiv.textContent = sym;
+    cell.appendChild(symDiv);
+
+    // Canvas kaparó réteg
+    const canvas = document.createElement('canvas');
+    canvas.className = 'scratch-cover';
+    cell.appendChild(canvas);
+
+    grid.appendChild(cell);
+
+    // Canvas inicializálás
+    initScratchCanvas(canvas, cell, idx);
+  });
+}
+
+function initScratchCanvas(canvas, cell, idx) {
+  const size = cell.offsetWidth || 120;
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext('2d');
+
+  // Kaparós ezüst réteg
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#9e9e9e');
+  grad.addColorStop(0.4, '#d4d4d4');
+  grad.addColorStop(0.6, '#b0b0b0');
+  grad.addColorStop(1, '#888');
+  ctx.fillStyle = grad;
+  ctx.roundRect(0, 0, size, size, 12);
+  ctx.fill();
+
+  // "Kaparj!" felirat
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('KAPARJ!', size / 2, size / 2);
+
+  let isDrawing = false;
+  let revealed = false;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const touch = e.touches ? e.touches[0] : e;
+    return {
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY,
+    };
+  }
+
+  function scratch(e) {
+    if (revealed) return;
+    const { x, y } = getPos(e);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 22, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ellenőrzés: mennyit kapartunk le
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let transparent = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 128) transparent++;
+    }
+    const pct = transparent / (canvas.width * canvas.height);
+    if (pct > 0.55 && !revealed) {
+      revealed = true;
+      // Töröljük a canvas-t teljesen
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      cell.querySelector('.scratch-symbol').classList.add('revealed');
+      revealedCells++;
+      document.getElementById('revealed-count').textContent = revealedCells;
+      checkAllRevealed();
+    }
+  }
+
+  canvas.addEventListener('mousedown', e => { isDrawing = true; scratch(e); });
+  canvas.addEventListener('mousemove', e => { if (isDrawing) scratch(e); });
+  canvas.addEventListener('mouseup', () => { isDrawing = false; });
+  canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; scratch(e); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing) scratch(e); }, { passive: false });
+  canvas.addEventListener('touchend', () => { isDrawing = false; });
+}
+
+function checkAllRevealed() {
+  if (revealedCells >= 9 && !resultShown) {
+    resultShown = true;
+    setTimeout(() => showResult(), 300);
+  }
+}
+
+async function showResult() {
+  setLastScratch();
+  const winner = checkWinner(ticketCells);
+  const area = document.getElementById('result-area');
+
+  if (winner) {
+    // Nyert!
+    area.innerHTML =
+      '<div class="result-banner win">' +
+        '<div class="rb-icon">🎉</div>' +
+        '<div class="rb-title winner-glow">' + winner.label + '</div>' +
+        '<div class="rb-reward">+' + winner.xp + ' XP</div>' +
+        '<div class="rb-sub">Az XP jóváírva az akasztófa profilodon!</div>' +
+      '</div>';
+
+    // XP mentés Firestore-ba
+    try {
+      await db.collection('users').doc(username).update({
+        xp: firebase.firestore.FieldValue.increment(winner.xp)
+      });
+    } catch(e) {}
+
+    // Konfetti animáció
+    launchConfetti();
+  } else {
+    area.innerHTML =
+      '<div class="result-banner lose">' +
+        '<div class="rb-icon">😔</div>' +
+        '<div class="rb-title">Nem nyertél ma...</div>' +
+        '<div class="rb-sub">Ne add fel! Holnap újra próbálhatsz.</div>' +
+      '</div>';
+  }
+
+  // Vissza gomb
+  area.innerHTML += '<div style="text-align:center;margin-top:16px;">' +
+    '<a href="index.html" class="btn btn-outline">Vissza a főmenübe</a>' +
+  '</div>';
+}
+
+// ── Konfetti ──
+function launchConfetti() {
+  const colors = ['#7c5cfc','#f5c842','#5cfc8e','#fc5c5c','#5c9efc','#c45cfc'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const size = 6 + Math.random() * 8;
+      el.style.cssText =
+        'position:fixed;top:-10px;left:' + (Math.random() * 100) + 'vw;' +
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'background:' + color + ';border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';' +
+        'z-index:99999;pointer-events:none;' +
+        'animation:confettiFall ' + (1.2 + Math.random() * 1.5) + 's ease-in forwards;';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }, i * 40);
+  }
+}
+
+// Konfetti CSS
+const style = document.createElement('style');
+style.textContent = '@keyframes confettiFall { to { transform: translateY(105vh) rotate(' + (360 + Math.random()*360) + 'deg); opacity:0; } }';
+document.head.appendChild(style);
+
+// ── Visszaszámláló ──
+function startCooldownTimer() {
+  const el = document.getElementById('cd-timer');
+  function update() {
+    const ms = getMsUntilNextScratch();
+    if (ms <= 0) { location.reload(); return; }
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    el.textContent =
+      String(h).padStart(2,'0') + ':' +
+      String(m).padStart(2,'0') + ':' +
+      String(s).padStart(2,'0');
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// ── Canvas méret beállítás betöltés után ──
+function resizeCanvases() {
+  document.querySelectorAll('.scratch-cell').forEach((cell, idx) => {
+    const canvas = cell.querySelector('.scratch-cover');
+    if (canvas && (canvas.width < 10)) {
+      initScratchCanvas(canvas, cell, idx);
+    }
+  });
+}
+
+// ── Indítás ──
+function init() {
+  if (isCooldown()) {
+    document.getElementById('cooldown-screen').style.display = 'block';
+    startCooldownTimer();
+  } else {
+    document.getElementById('ticket-screen').style.display = 'block';
+    // Kis delay hogy a DOM felépüljön és a cellák méretei meglegyen
+    setTimeout(() => buildTicket(), 50);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
