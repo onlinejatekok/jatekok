@@ -638,40 +638,38 @@ async function checkWord(word) {
   const fb = document.getElementById('sel-feedback');
   if (word.length < 2) return;
 
-  const reversed = word.split('').reverse().join('');
-
-  // Megvan-e a rácsban elrejtett szavak közt? (előre és visszafelé is)
-  const found = hiddenWords.find(w => w.word === word || w.word === reversed);
-  if (!found) {
-    fb.textContent = '❌ ' + word + ' — nem rejtett szó';
-    fb.style.color = 'var(--red)';
-    setTimeout(() => { fb.textContent = ''; }, 1500);
-    return;
-  }
-
-  const actualWord = found.word; // az eredeti elrejtett szó
-
-  // Már megtalálta valaki?
+  // Szoba lekérése
   const roomSnap = await db.collection('sw_rooms').doc(currentRoomId).get();
   const room = roomSnap.data();
   if (!room) return;
   const foundWords = room.foundWords || {};
 
-  if (foundWords[actualWord]) {
-    fb.textContent = '⚠️ ' + actualWord + ' — már megtalálva!';
+  // Már megtalálta valaki?
+  if (foundWords[word]) {
+    fb.textContent = '⚠️ ' + word + ' — már megtalálva!';
     fb.style.color = 'var(--gold)';
     setTimeout(() => { fb.textContent = ''; }, 1500);
     return;
   }
 
-  // Mentés Firestore-ba
-  myFoundWords.push(actualWord);
-  fb.textContent = '✅ ' + actualWord + ' — megtalálva!';
+  // Szóellenőrzés: csak alapszabályok (magyar betűk, min 2 karakter, nem egyforma betűk)
+  const cleanWord = word.toUpperCase().trim();
+  if (cleanWord.length < 2) return;
+  if (!/^[A-ZÁÉÍÓÖŐÚÜŰ]+$/.test(cleanWord)) {
+    fb.textContent = '❌ Érvénytelen szó';
+    fb.style.color = 'var(--red)';
+    setTimeout(() => { fb.textContent = ''; }, 1500);
+    return;
+  }
+
+  // Mentés Firestore-ba — minden érvényes szó elfogadva
+  myFoundWords.push(word);
+  fb.textContent = '✅ ' + word + ' — megtalálva!';
   fb.style.color = 'var(--green)';
   setTimeout(() => { fb.textContent = ''; }, 1500);
 
   await db.collection('sw_rooms').doc(currentRoomId).update({
-    ['foundWords.' + actualWord]: username,
+    ['foundWords.' + word]: username,
     ['scores.' + username]: firebase.firestore.FieldValue.increment(1)
   });
 }
