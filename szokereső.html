@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Játékok – Szókereső</title>
+  <link rel="stylesheet" href="style.css?v=9" />
+  <style>
+    .sw-wrap { max-width: 700px; margin: 0 auto; padding: 20px 16px; }
+
+    /* Lobby */
+    .lobby-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 16px; }
+    .player-row { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--bg2); border-radius:12px; margin-bottom:8px; border:2px solid transparent; }
+    .player-row.online { border-color: var(--green); }
+    .pr-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff; font-size:1.1rem; flex-shrink:0; }
+    .invite-btn { background: linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:.85rem; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s; }
+    .invite-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(124,92,252,.4); }
+    .invite-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+    /* Nehézség */
+    .diff-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
+    .diff-btn { background:var(--bg2); border:2px solid var(--border); border-radius:12px; padding:16px 10px; text-align:center; cursor:pointer; font-family:inherit; color:var(--text); transition:all .2s; }
+    .diff-btn:hover { border-color:var(--accent); transform:translateY(-2px); }
+    .diff-btn.selected { border-color:var(--accent); background:rgba(124,92,252,0.1); }
+    .diff-btn .di { font-size:1.6rem; margin-bottom:6px; }
+    .diff-btn .dn { font-weight:800; font-size:.95rem; }
+    .diff-btn .dd { font-size:.75rem; color:var(--muted); margin-top:3px; }
+
+    /* HUD */
+    .sw-hud { display:flex; align-items:center; justify-content:space-between; background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 18px; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
+    .sw-timer { font-size:1.6rem; font-weight:900; color:var(--gold); }
+    .sw-timer.urgent { color:var(--red); animation:pulse .5s infinite; }
+    .sw-scores { display:flex; gap:20px; }
+    .sw-score-item { text-align:center; }
+    .sw-score-item .val { font-size:1.4rem; font-weight:900; color:var(--accent); }
+    .sw-score-item .lbl { font-size:.72rem; color:var(--muted); }
+
+    /* Rács */
+    .grid-container { overflow-x:auto; margin-bottom:16px; touch-action:none; user-select:none; }
+    .sw-grid { display:inline-grid; gap:3px; background:var(--bg2); padding:10px; border-radius:var(--radius); border:1px solid var(--border); }
+    .sw-cell {
+      width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+      font-size:1rem; font-weight:800; border-radius:6px; cursor:pointer;
+      background:var(--card); color:var(--text); border:1px solid var(--border);
+      transition:background .1s, color .1s;
+    }
+    .sw-cell.selecting { background:rgba(124,92,252,0.35); color:#fff; border-color:var(--accent); }
+    .sw-cell.found-me { background:rgba(92,252,142,0.25); color:var(--green); border-color:var(--green); }
+    .sw-cell.found-opp { background:rgba(196,92,252,0.2); color:var(--accent2); border-color:var(--accent2); }
+    .sw-cell.found-both { background:rgba(245,200,66,0.2); color:var(--gold); border-color:var(--gold); }
+
+    /* Szólisták */
+    .words-panels { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+    .words-panel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; }
+    .words-panel.mine { border-color:var(--accent); }
+    .words-panel .wp-name { font-weight:800; font-size:.88rem; margin-bottom:8px; }
+    .words-panel .wp-list { list-style:none; font-size:.8rem; }
+    .words-panel .wp-list li { padding:3px 0; border-bottom:1px solid var(--border); color:var(--muted); }
+    .words-panel .wp-list li.found { color:var(--green); font-weight:700; }
+
+    /* Eredmény */
+    .result-overlay { position:fixed; inset:0; background:rgba(13,13,26,.92); display:flex; align-items:center; justify-content:center; z-index:100; }
+    .result-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:40px; text-align:center; max-width:420px; width:90%; animation:fadeIn .3s ease; }
+    .result-box .big-icon { font-size:4rem; margin-bottom:12px; }
+    .result-box .res-scores { display:flex; gap:20px; justify-content:center; margin:16px 0; }
+    .result-box .res-score-item .val { font-size:2.2rem; font-weight:900; }
+    .result-box .res-score-item .lbl { font-size:.82rem; color:var(--muted); }
+
+    /* Értesítő */
+    .notif-banner { position:fixed; top:70px; left:50%; transform:translateX(-50%); background:var(--card); border:2px solid var(--accent); border-radius:14px; padding:18px 20px; z-index:9999; box-shadow:0 8px 32px rgba(0,0,0,.5); animation:fadeIn .3s ease; text-align:center; width:90vw; max-width:360px; }
+    .notif-banner .notif-btns { display:flex; gap:10px; justify-content:center; margin-top:12px; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @media(max-width:540px) { .sw-cell { width:30px; height:30px; font-size:.82rem; } .words-panels { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="logo">[ Online Játékok ]</div>
+  <nav class="nav-links">
+    <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
+    <a href="index.html">Főoldal</a>
+    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙ Beállítások</button>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">Kilépés</button>
+  </nav>
+</header>
+
+<div class="sw-wrap">
+
+  <!-- LOBBY -->
+  <div id="lobby-screen">
+    <div class="lobby-card" id="online-players-card">
+      <h2 style="font-size:1.4rem;font-weight:900;margin-bottom:6px;">🔍 Szókereső</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px;">Versenyezz online játékos ellen — ki talál több szót 60 másodperc alatt!</p>
+
+      <!-- Nehézség -->
+      <h3 style="font-size:.85rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Nehézség</h3>
+      <div class="diff-grid" style="margin-bottom:20px;">
+        <button class="diff-btn selected" id="diff-easy" onclick="selectDiff('easy')">
+          <div class="di">🟢</div><div class="dn">Könnyű</div><div class="dd">8×8 rács · 8 szó</div>
+        </button>
+        <button class="diff-btn" id="diff-medium" onclick="selectDiff('medium')">
+          <div class="di">🟡</div><div class="dn">Közepes</div><div class="dd">10×10 rács · 12 szó</div>
+        </button>
+        <button class="diff-btn" id="diff-hard" onclick="selectDiff('hard')">
+          <div class="di">🔴</div><div class="dn">Nehéz</div><div class="dd">12×12 rács · 16 szó</div>
+        </button>
+      </div>
+
+      <h3 style="font-size:.9rem;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Online játékosok</h3>
+      <div id="online-list"><div style="color:var(--muted);font-size:.9rem;">Betöltés...</div></div>
+    </div>
+
+    <div class="lobby-card" id="pending-card" style="display:none;border-color:var(--accent);">
+      <div style="text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
+        <div style="font-weight:700;" id="pending-text">Várom a választ...</div>
+        <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="cancelInvite()">Mégsem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JÁTÉK -->
+  <div id="game-screen" style="display:none;">
+    <div class="sw-hud">
+      <div>
+        <div style="font-size:.75rem;color:var(--muted);">Hátralévő idő</div>
+        <div class="sw-timer" id="timer-display">60s</div>
+      </div>
+      <div class="sw-scores">
+        <div class="sw-score-item">
+          <div class="val" id="my-score">0</div>
+          <div class="lbl">Te</div>
+        </div>
+        <div style="font-size:1.2rem;color:var(--muted);align-self:center;">vs</div>
+        <div class="sw-score-item">
+          <div class="val" id="opp-score">0</div>
+          <div class="lbl" id="opp-name-hud">Ellenfél</div>
+        </div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);text-align:right;">
+        <span id="round-diff-badge"></span>
+      </div>
+    </div>
+
+    <div class="grid-container">
+      <div class="sw-grid" id="sw-grid"></div>
+    </div>
+
+    <div id="sel-feedback" style="text-align:center;font-size:.9rem;font-weight:700;min-height:22px;margin-bottom:10px;"></div>
+
+    <div class="words-panels">
+      <div class="words-panel mine">
+        <div class="wp-name" style="color:var(--accent);">Te</div>
+        <ul class="wp-list" id="my-words-list"></ul>
+      </div>
+      <div class="words-panel">
+        <div class="wp-name" id="opp-name-panel" style="color:var(--accent2);">Ellenfél</div>
+        <ul class="wp-list" id="opp-words-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- EREDMÉNY -->
+  <div class="result-overlay" id="result-screen" style="display:none;">
+    <div class="result-box">
+      <div class="big-icon" id="res-icon"></div>
+      <h2 id="res-title"></h2>
+      <div class="res-scores" id="res-scores"></div>
+      <p id="res-sub" style="color:var(--muted);margin-bottom:20px;"></p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button class="btn btn-primary" onclick="backToLobby()">Vissza a lobbyba</button>
+        <a href="index.html" class="btn btn-outline">Főoldal</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Meghívó értesítés -->
+<div class="notif-banner" id="invite-notif" style="display:none;">
+  <h3 id="invite-title">Meghívó érkezett!</h3>
+  <p id="invite-text" style="color:var(--muted);font-size:.88rem;"></p>
+  <div class="notif-btns">
+    <button class="btn btn-primary btn-sm" onclick="acceptInvite()">Elfogad</button>
+    <button class="btn btn-outline btn-sm" onclick="declineInvite()">Elutasít</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
+<script src="settings.js"></script>
+<script src="hamburger.js"></script>
+<script>
+const SESSION_KEY = 'doorpuzzle_session';
+const username = localStorage.getItem(SESSION_KEY);
+if (!username) { window.location.href = 'index.html'; }
+document.getElementById('nav-user').textContent = username;
+function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
+
+// Presence
+function setPresence() {
+  db.collection('presence').doc(username).set({ name: username, online: true, where: 'szókereső', since: Date.now() }).catch(()=>{});
+}
+setPresence();
+setInterval(setPresence, 20000);
+window.addEventListener('beforeunload', () => db.collection('presence').doc(username).delete().catch(()=>{}));
+window.addEventListener('pagehide', () => db.collection('presence').doc(username).delete().catch(()=>{}));
+
+// ── Magyar szavak nehézség szerint ──
+const WORD_LISTS = {
+  easy: ['ALMA','KÖRTE','KUTYA','MACSKA','SZÉK','ASZTAL','HÁZ','FA','KÉZ','LÁB',
+         'FEJ','SZEM','EGY','KETTŐ','HÁROM','NÉGY','ÖT','HAT','HÉT','NYOLC',
+         'HOLD','NAP','CÉL','KÉP','TÉR','SÓ','VÍZ','TŰZ','FÖLD','SZÉL',
+         'KÉK','PIROS','ZÖLD','SÁRGA','FEHÉR','FEKETE','NAGY','KIS','JÓ','RÉT'],
+  medium: ['REPÜLŐ','VONAT','FOLYÓ','HEGYSÉG','ERDŐ','MEZŐGAZDASÁG','VILLANYKÖRTE',
+           'SZÁMÍTÓGÉP','BILLENTYŰ','MONITOR','ABLAK','AJTÓ','PADLÓ','MENNYEZET',
+           'ISKOLÁS','TANKÖNYV','FELADAT','MEGOLDÁS','BARÁTSÁG','SZERETET',
+           'VARÁZSLAT','KALANDOR','ÖRÖMTELI','BOLDOGSÁG','TERMÉSZET','ÁLLATVILÁG',
+           'HEGYCSÚCS','VIHARFELHŐ','TENGERJÁRÓ','DZSUNGEL','SIVATAG','JÉGMEZŐ'],
+  hard: ['ELEKTROMOSSÁG','CSILLAGKÖD','MIKROSZKÓP','HIDROSZFÉRA','SZIMFÓNIA',
+         'PARLAMENTARIZMUS','GRAVITÁCIÓ','FOTOSZINTÉZIS','CHROMOSOMA','INTELLIGENCIA',
+         'ARCHITEKTÚRA','CIVILIZÁCIÓ','ÖSSZEFÜGGÉS','KÖVETKEZTETÉS','MEGVALÓSÍTÁS',
+         'SOKFÉLESÉG','KÜLÖNLEGESSÉG','ELLENÁLLÁS','KÉPZELETBELI','FENNTARTHATÓSÁG']
+};
+
+const DIFF_CONFIG = {
+  easy:   { size: 8,  wordCount: 8,  label: '🟢 Könnyű' },
+  medium: { size: 10, wordCount: 12, label: '🟡 Közepes' },
+  hard:   { size: 12, wordCount: 16, label: '🔴 Nehéz' }
+};
+
+const HU_LETTERS = 'AÁABCDEÉEFGHIÍIJKLMNOÓÖŐPRSTTUÚÜŰV';
+const TIMEOUT_MS = 45000;
+const GAME_TIME = 60;
+
+let selectedDiff = 'easy';
+let currentRoomId = null;
+let roomUnsub = null;
+let timerInterval = null;
+let opponentName = '';
+let pendingInviteId = null;
+let inviteUnsub = null;
+let currentInviteId = null;
+
+// Drag state
+let isDragging = false;
+let dragCells = [];
+let gridData = []; // { letter, row, col }
+let gridSize = 8;
+let hiddenWords = []; // szavak a rácsban
+let myFoundWords = [];
+
+function stringToColor(s) {
+  const c=['#7c5cfc','#c45cfc','#fc5c5c','#5cfc8e','#f5c842','#5c9efc','#fc9e5c','#5cfcdc'];
+  let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h);
+  return c[Math.abs(h)%c.length];
+}
+
+function selectDiff(d) {
+  selectedDiff = d;
+  ['easy','medium','hard'].forEach(k => {
+    document.getElementById('diff-'+k).classList.toggle('selected', k === d);
+  });
+}
+
+// ── Online játékosok ──
+function loadOnlinePlayers() {
+  db.collection('presence').onSnapshot(snap => {
+    const list = document.getElementById('online-list');
+    const now = Date.now();
+    const active = [];
+    snap.forEach(d => {
+      const u = d.data();
+      if (u.name !== username && (now - (u.since||0)) < TIMEOUT_MS) active.push(u);
+    });
+    if (active.length === 0) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:.9rem;padding:12px 0;">Jelenleg nincs más online játékos.</div>';
+      return;
+    }
+    list.innerHTML = active.map(u => {
+      const col = stringToColor(u.name);
+      return '<div class="player-row online">' +
+        '<div class="pr-avatar" style="background:'+col+';">'+u.name.charAt(0).toUpperCase()+'</div>' +
+        '<div style="flex:1;"><span style="font-weight:700;">'+u.name+'</span></div>' +
+        '<span style="color:var(--green);font-size:.78rem;font-weight:600;">● Online</span>' +
+        '<button class="invite-btn" onclick="sendInvite(\''+u.name+'\')">Meghívás</button>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+// ── Meghívó küldése ──
+async function sendInvite(toName) {
+  document.getElementById('online-players-card').style.display = 'none';
+  const pending = document.getElementById('pending-card');
+  pending.style.display = 'block';
+  document.getElementById('pending-text').textContent = toName + ' meghívása...';
+
+  const inviteRef = await db.collection('sw_invites').add({
+    from: username, to: toName, status: 'pending',
+    diff: selectedDiff, created: Date.now()
+  });
+  pendingInviteId = inviteRef.id;
+
+  inviteUnsub = db.collection('sw_invites').doc(inviteRef.id).onSnapshot(snap => {
+    const data = snap.data();
+    if (!data) return;
+    if (data.status === 'accepted') {
+      if (inviteUnsub) { inviteUnsub(); inviteUnsub = null; }
+      joinRoom(data.roomId, toName);
+    } else if (data.status === 'declined') {
+      if (inviteUnsub) { inviteUnsub(); inviteUnsub = null; }
+      document.getElementById('pending-text').textContent = toName + ' elutasította.';
+      setTimeout(() => {
+        pending.style.display = 'none';
+        document.getElementById('online-players-card').style.display = 'block';
+      }, 2000);
+    }
+  });
+}
+
+function cancelInvite() {
+  if (pendingInviteId) db.collection('sw_invites').doc(pendingInviteId).update({ status: 'cancelled' });
+  pendingInviteId = null;
+  if (inviteUnsub) { inviteUnsub(); inviteUnsub = null; }
+  document.getElementById('pending-card').style.display = 'none';
+  document.getElementById('online-players-card').style.display = 'block';
+}
+
+// ── Bejövő meghívók ──
+function watchInvites() {
+  db.collection('sw_invites').where('to','==',username).where('status','==','pending')
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const inv = change.doc.data();
+          if (Date.now() - (inv.created||0) > 30000) return;
+          showInviteNotif(change.doc.id, inv.from, inv.diff);
+        }
+      });
+    });
+}
+
+function showInviteNotif(inviteId, fromName, diff) {
+  currentInviteId = inviteId;
+  document.getElementById('invite-title').textContent = fromName + ' meghívott!';
+  const diffLabel = { easy:'Könnyű', medium:'Közepes', hard:'Nehéz' };
+  document.getElementById('invite-text').textContent = 'Szókereső – ' + (diffLabel[diff]||diff) + ' nehézség';
+  document.getElementById('invite-notif').style.display = 'block';
+  setTimeout(() => { if (document.getElementById('invite-notif').style.display !== 'none') declineInvite(); }, 30000);
+}
+
+async function acceptInvite() {
+  document.getElementById('invite-notif').style.display = 'none';
+  const invSnap = await db.collection('sw_invites').doc(currentInviteId).get();
+  const inv = invSnap.data();
+  if (!inv) return;
+
+  const diff = inv.diff || 'easy';
+  const cfg = DIFF_CONFIG[diff];
+  const words = pickWords(diff, cfg.wordCount);
+  const { grid, placed } = buildGrid(cfg.size, words);
+
+  const roomRef = await db.collection('sw_rooms').add({
+    players: [inv.from, username],
+    diff: diff,
+    gridSize: cfg.size,
+    grid: grid,        // flat array of letters
+    hiddenWords: placed,
+    status: 'playing',
+    startTime: Date.now() + 3000,
+    endTime: Date.now() + 3000 + GAME_TIME * 1000,
+    foundWords: {},    // { word: playerName }
+    scores: { [inv.from]: 0, [username]: 0 }
+  });
+
+  await db.collection('sw_invites').doc(currentInviteId).update({ status: 'accepted', roomId: roomRef.id });
+  opponentName = inv.from;
+  joinRoom(roomRef.id, inv.from);
+}
+
+function declineInvite() {
+  document.getElementById('invite-notif').style.display = 'none';
+  if (currentInviteId) db.collection('sw_invites').doc(currentInviteId).update({ status: 'declined' });
+}
+
+// ── Szó és rács generálás ──
+function pickWords(diff, count) {
+  const pool = [...WORD_LISTS[diff]].sort(() => Math.random() - 0.5);
+  return pool.slice(0, count);
+}
+
+function buildGrid(size, words) {
+  const grid = Array.from({length: size}, () =>
+    Array.from({length: size}, () => '')
+  );
+  const placed = [];
+  const directions = [
+    [0,1],[1,0],[1,1],[1,-1] // jobbra, le, átló jobb-le, átló bal-le
+  ];
+
+  for (const word of words) {
+    let ok = false;
+    for (let attempt = 0; attempt < 100 && !ok; attempt++) {
+      const [dr, dc] = directions[Math.floor(Math.random() * directions.length)];
+      const maxR = dr === 0 ? size - 1 : (dr > 0 ? size - word.length : word.length - 1);
+      const maxC = dc === 0 ? size - 1 : (dc > 0 ? size - word.length : size - 1);
+      const minR = dr < 0 ? word.length - 1 : 0;
+      const minC = dc < 0 ? word.length - 1 : 0;
+      if (maxR < minR || maxC < minC) continue;
+      const r = minR + Math.floor(Math.random() * (maxR - minR + 1));
+      const c = minC + Math.floor(Math.random() * (maxC - minC + 1));
+
+      // Ellenőrzés: belefér-e
+      let fits = true;
+      for (let i = 0; i < word.length; i++) {
+        const nr = r + dr * i, nc = c + dc * i;
+        if (nr < 0 || nr >= size || nc < 0 || nc >= size) { fits = false; break; }
+        if (grid[nr][nc] !== '' && grid[nr][nc] !== word[i]) { fits = false; break; }
+      }
+      if (!fits) continue;
+
+      // Elhelyezés
+      const cells = [];
+      for (let i = 0; i < word.length; i++) {
+        const nr = r + dr * i, nc = c + dc * i;
+        grid[nr][nc] = word[i];
+        cells.push({ r: nr, c: nc });
+      }
+      placed.push({ word, cells, dr, dc });
+      ok = true;
+    }
+  }
+
+  // Üres cellák feltöltése random betűkkel
+  const letters = 'AÁBCDEÉFGHIÍJKLMNOÓÖŐPRSTÚÜŰV';
+  for (let r = 0; r < size; r++)
+    for (let c = 0; c < size; c++)
+      if (grid[r][c] === '') grid[r][c] = letters[Math.floor(Math.random() * letters.length)];
+
+  // Flat array
+  const flat = [];
+  for (let r = 0; r < size; r++)
+    for (let c = 0; c < size; c++)
+      flat.push(grid[r][c]);
+
+  return { grid: flat, placed };
+}
+
+// ── Szobához csatlakozás ──
+function joinRoom(roomId, oppName) {
+  currentRoomId = roomId;
+  opponentName = oppName;
+  myFoundWords = [];
+
+  document.getElementById('lobby-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+  document.getElementById('opp-name-hud').textContent = oppName;
+  document.getElementById('opp-name-panel').textContent = oppName;
+
+  roomUnsub = db.collection('sw_rooms').doc(roomId).onSnapshot(snap => {
+    const room = snap.data();
+    if (!room) return;
+
+    gridSize = room.gridSize || 8;
+    hiddenWords = room.hiddenWords || [];
+
+    renderGrid(room.grid, room.foundWords || {});
+    renderScores(room.scores || {}, oppName);
+    renderWordLists(room.foundWords || {}, oppName);
+
+    const badge = document.getElementById('round-diff-badge');
+    if (badge) badge.textContent = DIFF_CONFIG[room.diff]?.label || '';
+
+    if (!timerInterval && room.endTime) startTimer(room.endTime);
+    if (room.status === 'finished') {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      showResult(room);
+    }
+  });
+}
+
+// ── Rács renderelés ──
+function renderGrid(flatGrid, foundWords) {
+  const container = document.getElementById('sw-grid');
+  container.style.gridTemplateColumns = 'repeat(' + gridSize + ', 36px)';
+
+  // Melyik cellák vannak megtalálva?
+  const foundCells = {}; // "r_c" -> playerName
+  for (const [word, finder] of Object.entries(foundWords)) {
+    const wordData = hiddenWords.find(w => w.word === word);
+    if (!wordData) continue;
+    for (const cell of wordData.cells) {
+      const key = cell.r + '_' + cell.c;
+      if (!foundCells[key]) foundCells[key] = finder;
+      else if (foundCells[key] !== finder) foundCells[key] = 'both';
+    }
+  }
+
+  container.innerHTML = flatGrid.map((letter, idx) => {
+    const r = Math.floor(idx / gridSize), c = idx % gridSize;
+    const key = r + '_' + c;
+    let cls = 'sw-cell';
+    if (foundCells[key]) {
+      if (foundCells[key] === username) cls += ' found-me';
+      else if (foundCells[key] === 'both') cls += ' found-both';
+      else cls += ' found-opp';
+    }
+    // Kijelölési állapot
+    if (dragCells.some(dc => dc.r === r && dc.c === c)) cls += ' selecting';
+    return '<div class="'+cls+'" data-r="'+r+'" data-c="'+c+'" data-idx="'+idx+'">'+letter+'</div>';
+  }).join('');
+
+  // Drag eseményfigyelők
+  attachDragEvents();
+}
+
+function renderScores(scores, oppName) {
+  document.getElementById('my-score').textContent = (scores[username] || 0);
+  document.getElementById('opp-score').textContent = (scores[oppName] || 0);
+}
+
+function renderWordLists(foundWords, oppName) {
+  const myList = document.getElementById('my-words-list');
+  const oppList = document.getElementById('opp-words-list');
+  myList.innerHTML = '';
+  oppList.innerHTML = '';
+  for (const [word, finder] of Object.entries(foundWords)) {
+    const li = document.createElement('li');
+    li.textContent = word;
+    li.className = 'found';
+    if (finder === username || finder === 'both') myList.appendChild(li.cloneNode(true));
+    if (finder === oppName || finder === 'both') oppList.appendChild(li.cloneNode(true));
+  }
+}
+
+// ── Drag & Select logika ──
+function attachDragEvents() {
+  const cells = document.querySelectorAll('.sw-cell');
+
+  cells.forEach(cell => {
+    cell.addEventListener('mousedown', startDrag);
+    cell.addEventListener('touchstart', e => { e.preventDefault(); startDrag(e.touches[0]); }, { passive: false });
+  });
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('touchmove', e => { e.preventDefault(); onDragMove(e.touches[0]); }, { passive: false });
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('touchend', endDrag);
+}
+
+function getCellFromPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (el && el.classList.contains('sw-cell')) return el;
+  return null;
+}
+
+function startDrag(e) {
+  const cell = e.target.closest ? e.target.closest('.sw-cell') : getCellFromPoint(e.clientX, e.clientY);
+  if (!cell) return;
+  isDragging = true;
+  dragCells = [{ r: +cell.dataset.r, c: +cell.dataset.c }];
+  cell.classList.add('selecting');
+}
+
+function onDragMove(e) {
+  if (!isDragging) return;
+  const cell = getCellFromPoint(e.clientX, e.clientY);
+  if (!cell) return;
+  const r = +cell.dataset.r, c = +cell.dataset.c;
+  if (dragCells.length === 0) return;
+
+  const first = dragCells[0];
+  // Ellenőrzöm hogy egyenes-e (vízszintes, függőleges, átló)
+  const dr = Math.sign(r - first.r), dc = Math.sign(c - first.c);
+  if (r === first.r && c === first.c) return;
+  if (dr !== 0 && dc !== 0 && Math.abs(r - first.r) !== Math.abs(c - first.c)) return;
+
+  // Újrarajzolja a kijelölést az első celltől az aktuálisig
+  const newDrag = [];
+  const steps = Math.max(Math.abs(r - first.r), Math.abs(c - first.c));
+  for (let i = 0; i <= steps; i++) {
+    newDrag.push({ r: first.r + dr * i, c: first.c + dc * i });
+  }
+  dragCells = newDrag;
+
+  // Vizuális frissítés
+  document.querySelectorAll('.sw-cell').forEach(cel => cel.classList.remove('selecting'));
+  dragCells.forEach(dc2 => {
+    const el = document.querySelector('.sw-cell[data-r="'+dc2.r+'"][data-c="'+dc2.c+'"]');
+    if (el) el.classList.add('selecting');
+  });
+}
+
+async function endDrag() {
+  if (!isDragging) return;
+  isDragging = false;
+  document.querySelectorAll('.sw-cell').forEach(cel => cel.classList.remove('selecting'));
+
+  if (dragCells.length < 2) { dragCells = []; return; }
+
+  // Szó összerakása
+  const word = dragCells.map(dc => {
+    const el = document.querySelector('.sw-cell[data-r="'+dc.r+'"][data-c="'+dc.c+'"]');
+    return el ? el.textContent : '';
+  }).join('');
+
+  dragCells = [];
+  await checkWord(word);
+}
+
+// ── Szó ellenőrzése ──
+async function checkWord(word) {
+  const fb = document.getElementById('sel-feedback');
+  if (word.length < 2) return;
+
+  // Megvan-e a rácsban elrejtett szavak közt?
+  const found = hiddenWords.find(w => w.word === word || w.word === word.split('').reverse().join(''));
+  if (!found) {
+    fb.textContent = '❌ ' + word + ' — nem rejtett szó';
+    fb.style.color = 'var(--red)';
+    setTimeout(() => { fb.textContent = ''; }, 1500);
+    return;
+  }
+
+  const actualWord = found.word;
+
+  // Már megtalálta valaki?
+  const roomSnap = await db.collection('sw_rooms').doc(currentRoomId).get();
+  const room = roomSnap.data();
+  if (!room) return;
+  const foundWords = room.foundWords || {};
+
+  if (foundWords[actualWord]) {
+    fb.textContent = '⚠️ ' + actualWord + ' — már megtalálva!';
+    fb.style.color = 'var(--gold)';
+    setTimeout(() => { fb.textContent = ''; }, 1500);
+    return;
+  }
+
+  // Mentés Firestore-ba
+  myFoundWords.push(actualWord);
+  fb.textContent = '✅ ' + actualWord + ' — megtalálva!';
+  fb.style.color = 'var(--green)';
+  setTimeout(() => { fb.textContent = ''; }, 1500);
+
+  await db.collection('sw_rooms').doc(currentRoomId).update({
+    ['foundWords.' + actualWord]: username,
+    ['scores.' + username]: firebase.firestore.FieldValue.increment(1)
+  });
+}
+
+// ── Timer ──
+function startTimer(endTime) {
+  const el = document.getElementById('timer-display');
+  timerInterval = setInterval(async () => {
+    const rem = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    el.textContent = rem + 's';
+    el.className = 'sw-timer' + (rem <= 10 ? ' urgent' : '');
+    if (rem <= 0) {
+      clearInterval(timerInterval); timerInterval = null;
+      await db.collection('sw_rooms').doc(currentRoomId).update({ status: 'finished' });
+    }
+  }, 200);
+}
+
+// ── Eredmény ──
+async function showResult(room) {
+  if (roomUnsub) { roomUnsub(); roomUnsub = null; }
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'flex';
+
+  const myScore = (room.scores && room.scores[username]) || 0;
+  const oppScore = (room.scores && room.scores[opponentName]) || 0;
+  const won = myScore > oppScore, draw = myScore === oppScore;
+
+  document.getElementById('res-icon').textContent = draw ? '🤝' : won ? '🏆' : '😔';
+  document.getElementById('res-title').textContent = draw ? 'Döntetlen!' : won ? 'Nyertél!' : 'Vesztettél...';
+  document.getElementById('res-scores').innerHTML =
+    '<div class="res-score-item"><div class="val" style="color:var(--accent);">'+myScore+'</div><div class="lbl">Te</div></div>' +
+    '<div style="font-size:1.5rem;color:var(--muted);align-self:center;">vs</div>' +
+    '<div class="res-score-item"><div class="val" style="color:var(--accent2);">'+oppScore+'</div><div class="lbl">'+opponentName+'</div></div>';
+  document.getElementById('res-sub').textContent = 'Megtalált szavak száma';
+
+  // Statisztika mentése
+  try {
+    const ref = db.collection('users').doc(username);
+    const snap = await ref.get();
+    if (snap.exists) {
+      const u = snap.data();
+      const swStats = u.swStats || { wins:0, losses:0, draws:0, totalGames:0 };
+      if (won) swStats.wins = (swStats.wins||0)+1;
+      else if (draw) swStats.draws = (swStats.draws||0)+1;
+      else swStats.losses = (swStats.losses||0)+1;
+      swStats.totalGames = (swStats.totalGames||0)+1;
+      await ref.update({ swStats, lastPlayed: Date.now() });
+    }
+  } catch(e) {}
+}
+
+function backToLobby() {
+  currentRoomId = null; opponentName = ''; myFoundWords = [];
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (roomUnsub) { roomUnsub(); roomUnsub = null; }
+  dragCells = [];
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('lobby-screen').style.display = 'block';
+  document.getElementById('online-players-card').style.display = 'block';
+}
+
+loadOnlinePlayers();
+watchInvites();
+</script>
+</body>
+</html>
