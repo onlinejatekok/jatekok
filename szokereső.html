@@ -44,6 +44,10 @@
       background:var(--card); color:var(--text); border:1px solid var(--border);
       transition:background .1s, color .1s;
     }
+    @media(max-width:540px) {
+      .sw-cell { width:min(9vw, 36px); height:min(9vw, 36px); font-size:min(3.5vw, 1rem); border-radius:4px; }
+      .sw-grid { gap:2px; padding:6px; }
+    }
     .sw-cell.selecting { background:rgba(124,92,252,0.35); color:#fff; border-color:var(--accent); }
     .sw-cell.found-me { background:rgba(92,252,142,0.25); color:var(--green); border-color:var(--green); }
     .sw-cell.found-opp { background:rgba(196,92,252,0.2); color:var(--accent2); border-color:var(--accent2); }
@@ -331,11 +335,12 @@ function cancelInvite() {
 
 // ── Bejövő meghívók ──
 function watchInvites() {
-  db.collection('sw_invites').where('to','==',username).where('status','==','pending')
+  db.collection('sw_invites').where('to','==',username)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
         if (change.type === 'added') {
           const inv = change.doc.data();
+          if (inv.status !== 'pending') return;
           if (Date.now() - (inv.created||0) > 30000) return;
           showInviteNotif(change.doc.id, inv.from, inv.diff);
         }

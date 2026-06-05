@@ -280,11 +280,13 @@ function cancelInvite() {
 function watchInvites() {
   db.collection('invites')
     .where('to', '==', username)
-    .where('status', '==', 'pending')
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
         if (change.type === 'added') {
           const inv = change.doc.data();
+          // Csak pending és max 30 másodperces meghívók
+          if (inv.status !== 'pending') return;
+          if (Date.now() - (inv.created || 0) > 30000) return;
           showInviteNotif(change.doc.id, inv.from);
         }
       });

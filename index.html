@@ -42,6 +42,25 @@
     .user-bar .stat { color: var(--muted); }
     .user-bar .stat strong { color: var(--text); }
 
+    /* Játékok szekció */
+    .games-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; padding: 14px 20px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 12px; user-select: none;
+      transition: background .2s;
+    }
+    .games-section-header:hover { background: var(--card); }
+    #games-grid-wrap {
+      overflow: hidden;
+      transition: max-height .35s ease, opacity .3s ease;
+      max-height: 600px;
+      opacity: 1;
+    }
+    #games-grid-wrap.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
     /* Játék kártyák */
     .games-grid {
       display: grid;
@@ -162,39 +181,47 @@
       </div>
     </div>
 
-    <!-- Játék kártyák -->
-    <div class="games-grid">
+    <!-- Játékok szekció -->
+    <div style="margin-bottom:20px;">
+      <div onclick="toggleGames()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;user-select:none;">
+        <span style="font-size:1.05rem;font-weight:900;">🎮 Játékok</span>
+        <span id="games-toggle-icon" style="font-size:1.1rem;color:var(--muted);transition:transform .25s;">▼</span>
+      </div>
+      <div id="games-grid-wrap">
+        <div class="games-grid">
 
-      <a href="game.html" class="game-card accent">
-        <div class="gc-icon">A_</div>
-        <div class="gc-title">Akasztófa</div>
-        <div class="gc-desc">Találd ki az elrejtett szót betűnként, mielőtt akasztva lennél!</div>
-      </a>
+          <a href="game.html" class="game-card accent">
+            <div class="gc-icon">A_</div>
+            <div class="gc-title">Akasztófa</div>
+            <div class="gc-desc">Találd ki az elrejtett szót betűnként, mielőtt akasztva lennél!</div>
+          </a>
 
-      <a href="szokap.html" class="game-card accent2">
-        <div class="gc-icon">A=B</div>
-        <div class="gc-title">Szókapcsolat</div>
-        <div class="gc-desc">Mi a közös a négy szóban? Válassz a négy lehetőség közül!</div>
-      </a>
+          <a href="szokap.html" class="game-card accent2">
+            <div class="gc-icon">A=B</div>
+            <div class="gc-title">Szókapcsolat</div>
+            <div class="gc-desc">Mi a közös a négy szóban? Válassz a négy lehetőség közül!</div>
+          </a>
 
-      <a href="wheel.html" class="game-card gold">
-        <div class="gc-icon">★</div>
-        <div class="gc-title">Szerencsekerék</div>
-        <div class="gc-desc">Pörgesd meg naponta egyszer — nyerhetsz csillagokat!</div>
-      </a>
+          <a href="wheel.html" class="game-card gold">
+            <div class="gc-icon">★</div>
+            <div class="gc-title">Szerencsekerék</div>
+            <div class="gc-desc">Pörgesd meg naponta egyszer — nyerhetsz csillagokat!</div>
+          </a>
 
-      <a href="paros.html" class="game-card" style="border-color:var(--border);" onmouseover="this.style.borderColor='var(--green)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-        <div class="gc-icon" style="color:var(--green);">⚔️</div>
-        <div class="gc-title">Páros játék</div>
-        <div class="gc-desc">Versenyezz online játékos ellen — ki ír több szót 30-60 mp alatt?</div>
-      </a>
+          <a href="paros.html" class="game-card" style="border-color:var(--border);" onmouseover="this.style.borderColor='var(--green)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+            <div class="gc-icon" style="color:var(--green);">VS</div>
+            <div class="gc-title">Páros játék</div>
+            <div class="gc-desc">Versenyezz online játékos ellen — ki ír több szót 30-60 mp alatt?</div>
+          </a>
 
-      <a href="szokereső.html" class="game-card" style="border-color:var(--border);" onmouseover="this.style.borderColor='#5c9efc';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-        <div class="gc-icon" style="color:#5c9efc;">🔍</div>
-        <div class="gc-title">Szókereső</div>
-        <div class="gc-desc">Keress elrejtett szavakat a rácsban — páros verseny, 60 mp alatt!</div>
-      </a>
+          <a href="szokereső.html" class="game-card" style="border-color:var(--border);" onmouseover="this.style.borderColor='#5c9efc';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+            <div class="gc-icon" style="color:#5c9efc;">[ ]</div>
+            <div class="gc-title">Szókereső</div>
+            <div class="gc-desc">Keress elrejtett szavakat a rácsban — páros verseny, 60 mp alatt!</div>
+          </a>
 
+        </div>
+      </div>
     </div>
 
     <!-- Alsó rész — csak online játékosok, toplista kikerült az akasztófa oldalra -->
@@ -372,6 +399,13 @@ async function doRegister() {
 
 function doLogout() { clearSession(); location.reload(); }
 
+function toggleGames() {
+  const wrap = document.getElementById('games-grid-wrap');
+  const icon = document.getElementById('games-toggle-icon');
+  const collapsed = wrap.classList.toggle('collapsed');
+  icon.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
 // ── Segédfüggvények az avatarhoz és rang indexhez ──
 function stringToColor(str) {
   const colors = ['#7c5cfc','#c45cfc','#fc5c5c','#5cfc8e','#f5c842','#5c9efc','#fc9e5c','#5cfcdc'];
@@ -445,12 +479,11 @@ function renderOnline(snap) {
 function watchInvitesOnMain(myName) {
   db.collection('invites')
     .where('to', '==', myName)
-    .where('status', '==', 'pending')
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
         if (change.type === 'added') {
           const inv = change.doc.data();
-          // Ne régi meghívókat mutasson (max 30 másodperces)
+          if (inv.status !== 'pending') return;
           if (Date.now() - (inv.created || 0) > 30000) return;
           showMainInviteNotif(change.doc.id, inv.from);
         }
