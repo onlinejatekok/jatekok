@@ -6,124 +6,161 @@
   <title>Online Játékok – Toronyrakós</title>
   <link rel="stylesheet" href="style.css?v=9" />
   <style>
-    body { overflow: hidden; }
+    html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; }
 
-    .tower-wrap {
+    .tower-page {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 10px 0 0;
-      height: calc(100vh - 56px);
-      position: relative;
+      height: 100vh;
     }
 
-    /* HUD */
+    /* HUD sáv */
     .tower-hud {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      width: 100%;
-      max-width: 420px;
-      padding: 0 16px 8px;
+      padding: 8px 20px 6px;
+      background: rgba(13,13,26,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       flex-shrink: 0;
+      z-index: 10;
     }
-    .tower-score {
-      font-size: 2rem;
-      font-weight: 900;
-      color: var(--accent);
-      line-height: 1;
-    }
-    .tower-score-label {
-      font-size: .72rem;
-      color: var(--muted);
-      text-align: center;
-    }
-    .tower-best {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--gold);
+    .tower-hud .hud-item { text-align: center; }
+    .tower-hud .hud-val  { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+    .tower-hud .hud-lbl  { font-size: .68rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .tower-hud .hud-title {
+      font-size: 1rem; font-weight: 900;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: .05em;
     }
 
-    /* Canvas */
+    /* Canvas wrapper — teljes maradék hely */
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #0a0a18;
+    }
+
     #tower-canvas {
       display: block;
-      border-radius: 12px;
+      width: 100%;
+      height: 100%;
       cursor: pointer;
       touch-action: none;
-      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
     /* Tap hint */
     .tap-hint {
       position: absolute;
-      bottom: 80px;
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
-      color: var(--muted);
-      font-size: .88rem;
-      font-weight: 600;
-      animation: blink 1.2s infinite;
+      color: rgba(255,255,255,0.5);
+      font-size: .95rem;
+      font-weight: 700;
+      animation: blink 1s infinite;
       pointer-events: none;
       white-space: nowrap;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* Nav-t elrejti hogy több hely legyen */
+    .site-header { display: none; }
+
+    /* Minimalista fejléc helyette */
+    .mini-nav {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+    }
+    .mini-nav a, .mini-nav button {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: .78rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+    }
 
     /* Game over overlay */
     .go-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(13,13,26,.88);
+      background: rgba(5,5,15,.92);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 200;
       animation: fadeIn .3s ease;
     }
     .go-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: #1a1a2e;
+      border: 1px solid rgba(124,92,252,0.4);
+      border-radius: 20px;
       padding: 36px 32px;
       text-align: center;
-      max-width: 360px;
-      width: 90%;
+      max-width: 340px;
+      width: 88%;
+      box-shadow: 0 0 60px rgba(124,92,252,0.2);
     }
-    .go-box .go-icon { font-size: 3.5rem; margin-bottom: 10px; }
-    .go-box h2 { font-size: 1.6rem; font-weight: 900; margin-bottom: 6px; }
-    .go-box .go-score { font-size: 3rem; font-weight: 900; color: var(--accent); margin: 12px 0 4px; }
-    .go-box .go-best { font-size: .9rem; color: var(--gold); margin-bottom: 20px; }
-    .go-box .go-btns { display: flex; gap: 12px; justify-content: center; }
+    .go-box .go-icon { font-size: 3.5rem; margin-bottom: 8px; }
+    .go-box h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 4px; color: #fff; }
+    .go-box .go-score { font-size: 4rem; font-weight: 900; color: #7c5cfc; margin: 8px 0 4px; line-height: 1; }
+    .go-box .go-label { font-size: .85rem; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+    .go-box .go-best  { font-size: .92rem; color: #f5c842; font-weight: 700; margin-bottom: 22px; }
+    .go-box .go-btns  { display: flex; gap: 12px; justify-content: center; }
+    .go-box .btn-restart {
+      background: linear-gradient(135deg, #7c5cfc, #c45cfc);
+      color: #fff; border: none; border-radius: 12px;
+      padding: 12px 28px; font-size: 1rem; font-weight: 800;
+      cursor: pointer; font-family: inherit;
+    }
+    .go-box .btn-home {
+      background: transparent; color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+      padding: 12px 20px; font-size: .9rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      display: flex; align-items: center;
+    }
   </style>
 </head>
 <body>
 
-<header class="site-header">
-  <div class="logo">[ Online Játékok ]</div>
-  <nav class="nav-links">
-    <span id="nav-user" style="color:var(--muted);font-size:.9rem;"></span>
-    <a href="index.html">Főoldal</a>
-    <button onclick="openSettings()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">⚙ Beállítások</button>
-    <button onclick="doLogout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">Kilépés</button>
-  </nav>
-</header>
+<div class="tower-page">
 
-<div class="tower-wrap">
+  <!-- Mini fejléc -->
   <div class="tower-hud">
-    <div>
-      <div class="tower-score" id="score-display">0</div>
-      <div class="tower-score-label">szint</div>
+    <div class="hud-item">
+      <div class="hud-val" id="score-display" style="color:#7c5cfc;">0</div>
+      <div class="hud-lbl">szint</div>
     </div>
-    <div style="text-align:center;">
-      <div style="font-size:.78rem;color:var(--muted);">Koppints vagy kattints a lerakáshoz!</div>
-    </div>
-    <div>
-      <div class="tower-best" id="best-display">⭐ 0</div>
-      <div class="tower-score-label">legjobb</div>
+    <div class="hud-title">🏗️ Toronyrakós</div>
+    <div class="hud-item">
+      <div class="hud-val" id="best-display" style="color:#f5c842;">0</div>
+      <div class="hud-lbl">rekord</div>
     </div>
   </div>
 
-  <canvas id="tower-canvas"></canvas>
-  <div class="tap-hint" id="tap-hint">👆 Koppints!</div>
+  <!-- Mini nav gombok -->
+  <div class="mini-nav">
+    <a href="index.html">← Főoldal</a>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-wrap" id="canvas-wrap">
+    <canvas id="tower-canvas"></canvas>
+    <div class="tap-hint" id="tap-hint">👆 Koppints a lerakáshoz!</div>
+  </div>
+
 </div>
 
 <!-- Game Over -->
@@ -132,323 +169,310 @@
     <div class="go-icon">🏗️</div>
     <h2>Ledőlt a torony!</h2>
     <div class="go-score" id="go-score">0</div>
+    <div class="go-label">szint</div>
     <div class="go-best" id="go-best-text"></div>
     <div class="go-btns">
-      <button class="btn btn-primary" onclick="restartGame()">▶ Újra</button>
-      <a href="index.html" class="btn btn-outline">Főoldal</a>
+      <button class="btn-restart" onclick="restartGame()">▶ Újra</button>
+      <a href="index.html" class="btn-home">Főoldal</a>
     </div>
   </div>
 </div>
 
 <script src="firebase.js"></script>
 <script src="settings.js"></script>
-<script src="hamburger.js"></script>
 <script>
 const SESSION_KEY = 'doorpuzzle_session';
-const username = localStorage.getItem(SESSION_KEY);
-if (!username) { window.location.href = 'index.html'; }
-document.getElementById('nav-user').textContent = username;
+const username = localStorage.getItem(SESSION_KEY) || 'Vendég';
 function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
 
 // Presence
-db.collection('presence').doc(username).set({ name: username, online: true, where: 'torony', since: Date.now() }).catch(()=>{});
-window.addEventListener('beforeunload', () => db.collection('presence').doc(username).delete().catch(()=>{}));
+if (typeof db !== 'undefined') {
+  db.collection('presence').doc(username).set({ name: username, online: true, where: 'torony', since: Date.now() }).catch(()=>{});
+  window.addEventListener('beforeunload', () => db.collection('presence').doc(username).delete().catch(()=>{}));
+}
 
 // ── Canvas setup ──
-const canvas = document.getElementById('tower-canvas');
-const ctx = canvas.getContext('2d');
+const canvas  = document.getElementById('tower-canvas');
+const ctx     = canvas.getContext('2d');
+const wrap    = document.getElementById('canvas-wrap');
+
+function resizeCanvas() {
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+
+// ── Konstansok ──
+const BLOCK_H    = 32;
+const BASE_SPEED = 2.8;
+const SPEED_INC  = 0.15;
+const MAX_SPEED  = 13;
+const BLOCK_COLORS = [
+  ['#7c5cfc','#5a3dd4'],
+  ['#c45cfc','#9a3dd4'],
+  ['#fc5c5c','#d43d3d'],
+  ['#5cfc8e','#3dd46a'],
+  ['#f5c842','#d4a820'],
+  ['#5c9efc','#3d7ed4'],
+  ['#fc9e5c','#d47e3d'],
+  ['#5cfcdc','#3dd4b8'],
+  ['#fc5ca8','#d43d88'],
+];
 
 const BEST_KEY = 'tower_best_' + username;
 
-// Méretek
-function resizeCanvas() {
-  const wrap = document.querySelector('.tower-wrap');
-  const hud = document.querySelector('.tower-hud');
-  const availH = wrap.clientHeight - hud.offsetHeight - 10;
-  const availW = Math.min(wrap.clientWidth, 420);
-  canvas.width  = availW;
-  canvas.height = availH;
-}
-resizeCanvas();
-window.addEventListener('resize', () => { resizeCanvas(); });
-
-// ── Játék konstansok ──
-const BLOCK_H      = 28;       // blokk magassága px
-const BASE_SPEED   = 2.5;      // kezdő sebesség
-const SPEED_INC    = 0.13;     // szintenként gyorsul
-const MAX_SPEED    = 11;
-const COLORS = [
-  '#7c5cfc','#c45cfc','#fc5c5c','#5cfc8e','#f5c842',
-  '#5c9efc','#fc9e5c','#5cfcdc','#fc5ca8','#a8fc5c'
-];
-
 // ── Játék állapot ──
-let blocks   = [];   // { x, width, color } — lerakott blokkok (alulról)
-let moving   = null; // { x, width, color, dir, speed }
-let score    = 0;
-let gameOver = false;
-let animId   = null;
-let started  = false;
+let blocks    = [];
+let moving    = null;
+let score     = 0;
+let gameOver  = false;
+let animId    = null;
+let scrollY   = 0;   // összes görgetés (lefelé tolás px)
 let bestScore = parseInt(localStorage.getItem(BEST_KEY) || '0');
 
-document.getElementById('best-display').textContent = '⭐ ' + bestScore;
+document.getElementById('best-display').textContent = bestScore;
 
-// ── Inicializálás ──
+// ── Init ──
 function initGame() {
-  blocks = [];
-  score  = 0;
+  resizeCanvas();
+  blocks   = [];
+  score    = 0;
   gameOver = false;
-  started  = false;
+  scrollY  = 0;
   document.getElementById('score-display').textContent = '0';
   document.getElementById('tap-hint').style.display = 'block';
   document.getElementById('go-overlay').style.display = 'none';
 
-  // Alap blokk — középen, fix
-  const baseW = Math.round(canvas.width * 0.55);
+  const baseW = Math.round(canvas.width * 0.52);
   const baseX = Math.round((canvas.width - baseW) / 2);
-  blocks.push({ x: baseX, width: baseW, color: COLORS[0] });
+  blocks.push({ x: baseX, w: baseW, ci: 0 });
 
   spawnMoving();
   if (animId) cancelAnimationFrame(animId);
-  gameLoop();
+  loop();
 }
 
 function spawnMoving() {
   const last  = blocks[blocks.length - 1];
+  const ci    = blocks.length % BLOCK_COLORS.length;
   const speed = Math.min(BASE_SPEED + score * SPEED_INC, MAX_SPEED);
-  const color = COLORS[(blocks.length) % COLORS.length];
-
-  // Mozgó blokk az utolsó szélességével indul, de balról jön
-  moving = {
-    x:     -last.width,
-    width:  last.width,
-    color:  color,
-    dir:    1,
-    speed:  speed
-  };
+  moving = { x: -last.w, w: last.w, ci, dir: 1, speed };
 }
 
-// ── Fő game loop ──
-function gameLoop() {
+// ── Game loop ──
+function loop() {
+  if (gameOver) return;
   update();
-  draw();
-  if (!gameOver) animId = requestAnimationFrame(gameLoop);
+  render();
+  animId = requestAnimationFrame(loop);
 }
 
 function update() {
-  if (!moving) return;
-
-  // Mozgatás
   moving.x += moving.dir * moving.speed;
-
-  // Falak
-  if (moving.x + moving.width > canvas.width) {
-    moving.x  = canvas.width - moving.width;
-    moving.dir = -1;
-  }
-  if (moving.x < 0) {
-    moving.x  = 0;
-    moving.dir = 1;
-  }
+  if (moving.x + moving.w >= canvas.width) { moving.x = canvas.width - moving.w; moving.dir = -1; }
+  if (moving.x <= 0)                       { moving.x = 0;                        moving.dir =  1; }
 }
 
 // ── Lerakás ──
 function drop() {
   if (gameOver) return;
-  if (!started) {
-    started = true;
-    document.getElementById('tap-hint').style.display = 'none';
-  }
+  document.getElementById('tap-hint').style.display = 'none';
 
   const last = blocks[blocks.length - 1];
+  const ol   = Math.max(moving.x, last.x);
+  const or_  = Math.min(moving.x + moving.w, last.x + last.w);
+  const ov   = or_ - ol;
 
-  // Átfedés számítás
-  const overlapLeft  = Math.max(moving.x, last.x);
-  const overlapRight = Math.min(moving.x + moving.width, last.x + last.width);
-  const overlap      = overlapRight - overlapLeft;
+  if (ov <= 2) { endGame(); return; }
 
-  if (overlap <= 0) {
-    // Teljesen mellé ment — vége
-    triggerGameOver();
-    return;
-  }
-
-  // Levágott rész vizuális effekt (nem kell tárolni, csak a lerakott marad)
-  const newBlock = {
-    x:     overlapLeft,
-    width: overlap,
-    color: moving.color
-  };
-
-  blocks.push(newBlock);
+  blocks.push({ x: ol, w: ov, ci: moving.ci });
   score++;
   document.getElementById('score-display').textContent = score;
 
-  // Görgetés — torony felfelé tolódik ha teli lesz a canvas
-  scrollIfNeeded();
+  // Görgetés: ha a torony teteje a canvas felső 35%-ába ér, toljuk le
+  const topY = blockY(blocks.length - 1);
+  if (topY < canvas.height * 0.35) {
+    scrollY += canvas.height * 0.28;
+  }
 
   spawnMoving();
 }
 
-// Ha a torony teteje a canvas felső 40%-ába ér, toljuk le az összes blokkot
-function scrollIfNeeded() {
-  const topY = getBlockY(blocks.length - 1);
-  if (topY < canvas.height * 0.40) {
-    const shift = Math.round(canvas.height * 0.25);
-    blocks.forEach(b => b._scrollOffset = (b._scrollOffset || 0) + shift);
-  }
+// ── Y pozíció egy blokkhoz ──
+// idx=0 az alap, legalsó → canvas alján
+// scrollY növekedésével az egész torony lefelé csúszik (= a torony teteje feljön)
+function blockY(idx) {
+  return canvas.height - BLOCK_H - idx * BLOCK_H - scrollY + (scrollY > 0 ? scrollY - scrollY : 0);
 }
 
-// ── Y pozíció számítás (scroll figyelembevételével) ──
-function getBlockY(idx) {
-  // idx 0 = alap (legalján), idx n = legfelső
-  // canvas aljától számítva felfelé
-  const scrollTotal = blocks[idx] ? (blocks[idx]._scrollOffset || 0) : 0;
-  return canvas.height - BLOCK_H - idx * BLOCK_H - scrollTotal;
+// Valójában egyszerűbb: minden blokk Y-ja = canvas.height - BLOCK_H - idx*BLOCK_H + scrollOffset
+// ahol scrollOffset = scrollY (pozitív = felfelé tolja a blokkokat)
+function bY(idx) {
+  return canvas.height - BLOCK_H * (idx + 1) + scrollY - scrollY;
+}
+
+// Letisztázott Y számítás:
+function getY(idx) {
+  // canvas alja = 0 szint, felfelé épül
+  // scrollY = hány pixelt toltuk fel a "kamerát"
+  return canvas.height - BLOCK_H * (idx + 1) - scrollY;
 }
 
 function getMovingY() {
-  if (blocks.length === 0) return 0;
-  const topIdx = blocks.length - 1;
-  return getBlockY(topIdx) - BLOCK_H;
+  return getY(blocks.length); // pontosan a legfelső blokk felett
 }
 
-// ── Rajzolás ──
-function draw() {
+// ── Render ──
+function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Háttér gradiens
+  // Háttér: sötét égbolt gradiens
   const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  bg.addColorStop(0, '#0d0d1a');
-  bg.addColorStop(1, '#1a1a2e');
+  bg.addColorStop(0,   '#04041a');
+  bg.addColorStop(0.5, '#080820');
+  bg.addColorStop(1,   '#0f0f28');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Csillagok (statikus, csak dekoráció)
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  const stars = [[20,30],[80,60],[140,20],[200,80],[260,40],[320,70],[380,25],[60,120],[170,110],[300,130],[100,180],[240,160],[50,200]];
+  stars.forEach(([sx, sy]) => {
+    const starY = sy - scrollY * 0.1; // parallax
+    ctx.beginPath();
+    ctx.arc(sx % canvas.width, starY % canvas.height, 1.2, 0, Math.PI*2);
+    ctx.fill();
+  });
+
   // Lerakott blokkok
   blocks.forEach((b, idx) => {
-    const y = getBlockY(idx);
-    if (y > canvas.height || y + BLOCK_H < 0) return; // culling
-
-    // Árnyék
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(b.x + 3, y + 3, b.width, BLOCK_H);
-
-    // Blokk
-    ctx.fillStyle = b.color;
-    roundRect(ctx, b.x, y, b.width, BLOCK_H, 5);
-    ctx.fill();
-
-    // Fény hatás tetején
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    roundRect(ctx, b.x + 2, y + 2, b.width - 4, 8, 3);
-    ctx.fill();
-
-    // Szint szám az alap blokkon
-    if (idx === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('ALAP', b.x + b.width / 2, y + BLOCK_H / 2);
-    }
+    const y = getY(idx);
+    if (y > canvas.height + 5 || y + BLOCK_H < -5) return;
+    drawBlock(b.x, y, b.w, BLOCK_H, b.ci, idx === 0);
   });
 
   // Mozgó blokk
-  if (moving) {
-    const y = getMovingY();
+  const my = getMovingY();
+  drawBlock(moving.x, my, moving.w, BLOCK_H, moving.ci, false);
 
-    // Árnyék
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(moving.x + 3, y + 3, moving.width, BLOCK_H);
+  // Irányzó vonalak (halvány) — mutatja hol van az utolsó blokk széle
+  const last = blocks[blocks.length - 1];
+  const ly   = getY(blocks.length - 1);
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([5, 6]);
+  ctx.beginPath();
+  ctx.moveTo(last.x, 0);          ctx.lineTo(last.x, ly);
+  ctx.moveTo(last.x + last.w, 0); ctx.lineTo(last.x + last.w, ly);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
-    // Blokk
-    ctx.fillStyle = moving.color;
-    roundRect(ctx, moving.x, y, moving.width, BLOCK_H, 5);
-    ctx.fill();
-
-    // Fény
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    roundRect(ctx, moving.x + 2, y + 2, moving.width - 4, 8, 3);
-    ctx.fill();
-
-    // Vezető vonal — pontosan alatta
-    if (blocks.length > 0) {
-      const last = blocks[blocks.length - 1];
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(last.x, y + BLOCK_H);
-      ctx.lineTo(last.x, getBlockY(blocks.length - 1));
-      ctx.moveTo(last.x + last.width, y + BLOCK_H);
-      ctx.lineTo(last.x + last.width, getBlockY(blocks.length - 1));
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  }
-
-  // Pontszám a canvason belül (nagy, halvány)
+  // Nagy halvány pontszám a háttérben
   if (score > 0) {
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.font = 'bold 120px sans-serif';
+    ctx.save();
+    ctx.font = `bold ${Math.min(180, canvas.width * 0.45)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(124,92,252,0.06)';
     ctx.fillText(score, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
   }
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+function drawBlock(x, y, w, h, ci, isBase) {
+  const [col, dark] = BLOCK_COLORS[ci % BLOCK_COLORS.length];
+
+  // Árnyék
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(x + 4, y + 5, w, h);
+
+  // Alap blokk sötétebb
+  ctx.fillStyle = isBase ? dark : col;
+  roundRect(x, y, w, h, 6);
+  ctx.fill();
+
+  // Felső fény csík
+  const shine = ctx.createLinearGradient(x, y, x, y + h);
+  shine.addColorStop(0,   'rgba(255,255,255,0.28)');
+  shine.addColorStop(0.4, 'rgba(255,255,255,0.06)');
+  shine.addColorStop(1,   'rgba(0,0,0,0.1)');
+  ctx.fillStyle = shine;
+  roundRect(x, y, w, h, 6);
+  ctx.fill();
+
+  // Oldal árnyék
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.fillRect(x + w - 4, y + 4, 4, h - 4);
+
+  // Alap felirat
+  if (isBase && w > 50) {
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('START', x + w / 2, y + h / 2);
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x,     y + h, r);
+  ctx.arcTo(x,     y + h, x,     y,     r);
+  ctx.arcTo(x,     y,     x + w, y,     r);
   ctx.closePath();
 }
 
 // ── Game Over ──
-function triggerGameOver() {
+function endGame() {
   gameOver = true;
-  if (animId) cancelAnimationFrame(animId);
+  cancelAnimationFrame(animId);
+  render(); // utolsó frame
 
-  // Utolsó eset: rajzold meg az elbukó blokkot animálva
-  draw();
-
-  // Best score
   if (score > bestScore) {
     bestScore = score;
     localStorage.setItem(BEST_KEY, bestScore);
-    document.getElementById('best-display').textContent = '⭐ ' + bestScore;
-    // Firestore mentés
-    db.collection('users').doc(username).update({
-      towerBest: bestScore
-    }).catch(()=>{});
+    document.getElementById('best-display').textContent = bestScore;
+    if (typeof db !== 'undefined') {
+      db.collection('users').doc(username).update({ towerBest: bestScore }).catch(()=>{});
+    }
   }
 
   document.getElementById('go-score').textContent = score;
   document.getElementById('go-best-text').textContent =
-    score >= bestScore ? '🏆 Új rekord!' : 'Legjobb: ' + bestScore + ' szint';
-  document.getElementById('go-overlay').style.display = 'flex';
+    score > 0 && score >= bestScore ? '🏆 Új rekord!' : 'Rekord: ' + bestScore + ' szint';
+  setTimeout(() => { document.getElementById('go-overlay').style.display = 'flex'; }, 300);
 }
 
-function restartGame() {
-  initGame();
-}
+function restartGame() { initGame(); }
 
-// ── Input kezelés ──
-canvas.addEventListener('click', drop);
-canvas.addEventListener('touchstart', e => { e.preventDefault(); drop(); }, { passive: false });
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space' || e.code === 'ArrowDown') { e.preventDefault(); drop(); }
+// ── Input ──
+// Kattintás — csak canvas-ra
+wrap.addEventListener('click', function(e) {
+  drop();
+});
+wrap.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  drop();
+}, { passive: false });
+document.addEventListener('keydown', function(e) {
+  if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'ArrowUp') {
+    e.preventDefault();
+    drop();
+  }
 });
 
-// ── Indítás ──
-initGame();
+// ── Start ──
+window.addEventListener('load', () => {
+  resizeCanvas();
+  initGame();
+});
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  // Újraindítás resize-kor hogy ne csússzon el minden
+  if (!gameOver) initGame();
+});
 </script>
 </body>
 </html>
