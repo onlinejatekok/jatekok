@@ -735,6 +735,17 @@ async function checkWord(word) {
     ['foundWords.' + actualWord]: username,
     ['scores.' + username]: firebase.firestore.FieldValue.increment(1)
   });
+
+  // Ha minden szó megtalálva, vége a játéknak
+  const updatedSnap = await db.collection('sw_rooms').doc(currentRoomId).get();
+  const updatedRoom = updatedSnap.data();
+  if (updatedRoom) {
+    const totalWords = (updatedRoom.hiddenWords || []).length;
+    const foundCount = Object.keys(updatedRoom.foundWords || {}).length;
+    if (foundCount >= totalWords) {
+      await db.collection('sw_rooms').doc(currentRoomId).update({ status: 'finished' });
+    }
+  }
 }
 
 // ── Keresendő szavak megjelenítése ──
