@@ -424,22 +424,23 @@ function renderOnline(snap) {
   el.innerHTML = active.map(u => {
     const isMe = u.name === mySession;
     const avatarColor = stringToColor(u.name);
-    // Hol van a játékos
+    const inGame = u.inGame === true;
     const whereLabels = {
       'főmenü': '🏠 Főmenü',
       'akasztófa': 'A_ Akasztófa',
       'szókapcsolat': 'A=B Szókapcsolat',
       'páros játék': 'VS Páros',
       'kerék': '★ Kerék',
+      'szókereső': '🔍 Szókereső',
     };
-    const whereLabel = whereLabels[u.where] || '● Online';
+    const whereLabel = inGame ? '⚔️ Meccsben' : (whereLabels[u.where] || '● Online');
     return '<li class="' + (isMe ? 'is-me' : '') + '">' +
       '<div class="lb-avatar" style="background:' + avatarColor + ';">' + u.name.charAt(0).toUpperCase() + '</div>' +
       '<span class="lb-name">' +
         '<a href="profile.html?player=' + encodeURIComponent(u.name) + '">' + u.name + '</a>' +
         (isMe ? '<span style="background:var(--accent);color:#fff;font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:999px;">Te</span>' : '') +
       '</span>' +
-      '<span style="color:var(--muted);font-size:.75rem;">' + whereLabel + '</span>' +
+      '<span style="color:' + (inGame ? 'var(--red)' : 'var(--muted)') + ';font-size:.75rem;">' + whereLabel + '</span>' +
     '</li>';
   }).join('');
 }
@@ -510,53 +511,8 @@ async function acceptMainInvite() {
   const notif = document.getElementById('main-invite-notif');
   if (notif) notif.remove();
   if (!mainInviteId) return;
-
-  const invSnap = await db.collection('invites').doc(mainInviteId).get();
-  const inv = invSnap.data();
-  if (!inv) return;
-
-  const myName = getSession();
-  const TOTAL_ROUNDS = 5;
-  const times = [20, 30, 45];
-  const letters = 'ABCDEFGHIJKLMNOPRSTUVZ';
-  const CHALLENGES = [
-    null, null, null,
-    { type: 'minLen', value: 5, label: 'Minimum 5 betűs szavak!' },
-    { type: 'minLen', value: 6, label: 'Minimum 6 betűs szavak!' },
-    { type: 'maxLen', value: 4, label: 'Maximum 4 betűs szavak!' },
-    { type: 'contains', value: 'A', label: 'A szóban legyen A betű!' },
-  ];
-  const rounds = Array.from({ length: TOTAL_ROUNDS }, () => ({
-    letter: letters[Math.floor(Math.random() * letters.length)],
-    roundTime: times[Math.floor(Math.random() * times.length)],
-    challenge: CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)] || null,
-  }));
-  const firstRound = rounds[0];
-
-  const roomRef = await db.collection('rooms').add({
-    players: [inv.from, myName],
-    totalRounds: TOTAL_ROUNDS,
-    currentRound: 0,
-    rounds: rounds,
-    letter: firstRound.letter,
-    roundTime: firstRound.roundTime,
-    challenge: firstRound.challenge,
-    startTime: Date.now() + 3000,
-    endTime: Date.now() + 3000 + firstRound.roundTime * 1000,
-    status: 'playing',
-    words: {},
-    scores: { [inv.from]: 0, [myName]: 0 },
-    totalScores: { [inv.from]: 0, [myName]: 0 },
-    roundScores: {}
-  });
-
-  await db.collection('invites').doc(mainInviteId).update({
-    status: 'accepted',
-    roomId: roomRef.id
-  });
-
-  // Átirányítás a páros játékba a szobával
-  window.location.href = 'paros.html?roomId=' + roomRef.id + '&opp=' + encodeURIComponent(inv.from);
+  // Csak átirányítás — a paros.html fogja elfogadni és létrehozni a szobát
+  window.location.href = 'paros.html?inviteId=' + mainInviteId;
 }
 
 function declineMainInvite() {

@@ -178,11 +178,16 @@ document.getElementById('nav-user').textContent = username;
 function doLogout() { localStorage.removeItem(SESSION_KEY); window.location.href = 'index.html'; }
 
 // Presence — páros játék
-function setParosPresence() {
-  db.collection('presence').doc(username).set({ name: username, online: true, where: 'páros játék', since: Date.now() }).catch(()=>{});
+function setParosPresence(inMatch) {
+  db.collection('presence').doc(username).set({
+    name: username, online: true,
+    where: inMatch ? 'páros meccs' : 'páros játék',
+    inMatch: inMatch || false,
+    since: Date.now()
+  }).catch(()=>{});
 }
-setParosPresence();
-setInterval(setParosPresence, 20000);
+setParosPresence(false);
+setInterval(() => setParosPresence(!!currentRoomId), 20000);
 window.addEventListener('beforeunload', () => db.collection('presence').doc(username).delete().catch(()=>{}));
 window.addEventListener('pagehide', () => db.collection('presence').doc(username).delete().catch(()=>{}));
 
@@ -219,15 +224,18 @@ function loadOnlinePlayers() {
     }
     list.innerHTML = active.map(u => {
       const col = stringToColor(u.name);
-      const where = u.where === 'főmenü' ? '🏠 Főmenüben' : '🎮 Játszik';
+      const inGame = u.inGame === true;
+      const whereLabel = inGame ? '⚔️ Meccsben van' : (u.where === 'főmenü' ? '🏠 Főmenüben' : '🎮 Játszik');
+      const btn = inGame
+        ? '<span style="color:var(--red);font-size:.78rem;font-weight:700;">Meccsben van</span>'
+        : '<button class="invite-btn" onclick="sendInvite(\''+u.name+'\')">Meghívás</button>';
       return '<div class="player-row online">' +
         '<div class="pr-avatar" style="background:'+col+';">'+u.name.charAt(0).toUpperCase()+'</div>' +
         '<div style="flex:1;">' +
           '<span class="pr-name">'+u.name+'</span>' +
-          '<div style="font-size:.75rem;color:var(--muted);">'+where+'</div>' +
+          '<div style="font-size:.75rem;color:' + (inGame ? 'var(--red)' : 'var(--muted)') + ';">'+whereLabel+'</div>' +
         '</div>' +
-        '<span style="color:var(--green);font-size:.78rem;font-weight:600;">● Online</span>' +
-        '<button class="invite-btn" onclick="sendInvite(\''+u.name+'\')">Meghívás</button>' +
+        btn +
       '</div>';
     }).join('');
   });
@@ -367,6 +375,9 @@ function joinRoom(roomId, oppName) {
   currentRoomId = roomId;
   opponentName = oppName;
   myWords = [];
+
+  // Jelzi hogy meccsben van
+  setParosPresence(true);
 
   document.getElementById('lobby-screen').style.display = 'none';
   document.getElementById('pending-card').style.display = 'none';
@@ -700,9 +711,10 @@ function backToLobby() {
   opponentName = '';
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   if (roomUnsub) { roomUnsub(); roomUnsub = null; }
-  // Körváltás overlay eltávolítása ha maradt
   const rt = document.getElementById('round-transition');
   if (rt) rt.remove();
+  // Meccs vége — visszaállítja a státuszt
+  setParosPresence(false);
   document.getElementById('result-screen').style.display = 'none';
   document.getElementById('game-screen').style.display = 'none';
   document.getElementById('lobby-screen').style.display = 'block';
