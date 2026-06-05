@@ -224,16 +224,18 @@ function loadOnlinePlayers() {
     }
     list.innerHTML = active.map(u => {
       const col = stringToColor(u.name);
-      const inGame = u.inGame === true;
-      const whereLabel = inGame ? '⚔️ Meccsben van' : (u.where === 'főmenü' ? '🏠 Főmenüben' : '🎮 Játszik');
-      const btn = inGame
-        ? '<span style="color:var(--red);font-size:.78rem;font-weight:700;">Meccsben van</span>'
+      const inMatch = u.where === 'meccsben';
+      const whereLabel = inMatch
+        ? '<span style="color:var(--red);font-size:.75rem;font-weight:700;">⚔️ Meccsben van</span>'
+        : '<span style="color:var(--muted);font-size:.75rem;">' + (u.where === 'főmenü' ? '🏠 Főmenüben' : '🎮 Játszik') + '</span>';
+      const btn = inMatch
+        ? '<span style="color:var(--red);font-size:.78rem;font-weight:700;padding:8px 10px;">Meccsben</span>'
         : '<button class="invite-btn" onclick="sendInvite(\''+u.name+'\')">Meghívás</button>';
       return '<div class="player-row online">' +
         '<div class="pr-avatar" style="background:'+col+';">'+u.name.charAt(0).toUpperCase()+'</div>' +
         '<div style="flex:1;">' +
           '<span class="pr-name">'+u.name+'</span>' +
-          '<div style="font-size:.75rem;color:' + (inGame ? 'var(--red)' : 'var(--muted)') + ';">'+whereLabel+'</div>' +
+          '<div>' + whereLabel + '</div>' +
         '</div>' +
         btn +
       '</div>';
@@ -309,7 +311,10 @@ function showInviteNotif(inviteId, fromName) {
   document.getElementById('invite-notif').style.display = 'block';
 }
 
+let acceptingInvite = false;
 async function acceptInvite() {
+  if (acceptingInvite) return; // dupla kattintás védelem
+  acceptingInvite = true;
   document.getElementById('invite-notif').style.display = 'none';
   const invSnap = await db.collection('invites').doc(currentInviteId).get();
   const inv = invSnap.data();
@@ -372,6 +377,7 @@ function declineInvite() {
 <script>
 // ── Szoba csatlakozás ──
 function joinRoom(roomId, oppName) {
+  acceptingInvite = false; // reset a guard
   currentRoomId = roomId;
   opponentName = oppName;
   myWords = [];

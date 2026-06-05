@@ -40,7 +40,7 @@
     .sw-grid { display:inline-grid; gap:4px; background:var(--bg2); padding:10px; border-radius:var(--radius); border:1px solid var(--border); width:100%; box-sizing:border-box; }
     .sw-cell {
       width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center;
-      font-size:1.3rem; font-weight:900; border-radius:10px; cursor:pointer;
+      font-size:1.5rem; font-weight:900; border-radius:10px; cursor:pointer;
       background:var(--card); color:var(--text); border:1px solid var(--border);
       transition:background .1s, color .1s;
       -webkit-tap-highlight-color: transparent;
@@ -51,7 +51,7 @@
     .sw-cell.found-both { background:rgba(245,200,66,0.2); color:var(--gold); border-color:var(--gold); }
     @media(max-width:600px) {
       .sw-grid { gap:3px; padding:7px; }
-      .sw-cell { font-size:1.15rem; border-radius:8px; }
+      .sw-cell { font-size:1.35rem; border-radius:8px; }
     }
     .sw-cell.selecting { background:rgba(124,92,252,0.35); color:#fff; border-color:var(--accent); }
     .sw-cell.found-me { background:rgba(92,252,142,0.25); color:var(--green); border-color:var(--green); }
@@ -106,13 +106,13 @@
       <h3 style="font-size:.85rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Nehézség</h3>
       <div class="diff-grid" style="margin-bottom:20px;">
         <button class="diff-btn selected" id="diff-easy" onclick="selectDiff('easy')">
-          <div class="di">🟢</div><div class="dn">Könnyű</div><div class="dd">8×8 rács · 8 szó</div>
+          <div class="di">🟢</div><div class="dn">Könnyű</div><div class="dd">6×6 rács · 6 szó</div>
         </button>
         <button class="diff-btn" id="diff-medium" onclick="selectDiff('medium')">
-          <div class="di">🟡</div><div class="dn">Közepes</div><div class="dd">10×10 rács · 12 szó</div>
+          <div class="di">🟡</div><div class="dn">Közepes</div><div class="dd">9×9 rács · 10 szó</div>
         </button>
         <button class="diff-btn" id="diff-hard" onclick="selectDiff('hard')">
-          <div class="di">🔴</div><div class="dn">Nehéz</div><div class="dd">12×12 rács · 16 szó</div>
+          <div class="di">🔴</div><div class="dn">Nehéz</div><div class="dd">12×12 rács · 14 szó</div>
         </button>
       </div>
 
@@ -263,9 +263,9 @@ const WORD_LISTS = {
 };
 
 const DIFF_CONFIG = {
-  easy:   { size: 8,  wordCount: 8,  label: '🟢 Könnyű' },
-  medium: { size: 10, wordCount: 12, label: '🟡 Közepes' },
-  hard:   { size: 12, wordCount: 16, label: '🔴 Nehéz' }
+  easy:   { size: 6,  wordCount: 6,  label: '🟢 Könnyű' },
+  medium: { size: 9,  wordCount: 10, label: '🟡 Közepes' },
+  hard:   { size: 12, wordCount: 14, label: '🔴 Nehéz' }
 };
 
 const HU_LETTERS = 'AÁABCDEÉEFGHIÍIJKLMNOÓÖŐPRSTTUÚÜŰV';
