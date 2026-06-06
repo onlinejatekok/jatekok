@@ -110,11 +110,54 @@
     .wbox .wi{font-size:3.5rem;margin-bottom:10px;}
     .wbox h2{font-size:1.6rem;font-weight:900;margin-bottom:8px;}
     .wbox p{color:#8888aa;margin-bottom:20px;font-size:.9rem;}
-    .wbtn{padding:12px 26px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c5cfc,#c45cfc);color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;font-family:inherit;margin:4px;}
-
     /* Invite notif */
     .notif-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1a1a35;border:2px solid #7c5cfc;border-radius:14px;padding:18px 20px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeIn .3s ease;text-align:center;width:90vw;max-width:360px;}
     .notif-btns{display:flex;gap:10px;justify-content:center;margin-top:12px;}
+
+    /* ── TOKEN ANIMÁCIÓ ── */
+    @keyframes tokenBounce {
+      0%   { transform: scale(1) translateY(0); }
+      30%  { transform: scale(1.5) translateY(-8px); }
+      60%  { transform: scale(0.9) translateY(2px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes tokenStep {
+      0%   { transform: scale(1.4) translateY(-6px); opacity:.7; }
+      100% { transform: scale(1) translateY(0); opacity:1; }
+    }
+    .stk.bounce { animation: tokenBounce .4s ease forwards; }
+    .stk.step   { animation: tokenStep .18s ease forwards; }
+
+    /* Mező villogás lépéskor */
+    @keyframes spFlash {
+      0%,100% { filter: brightness(1); }
+      50%     { filter: brightness(2); }
+    }
+    .sp.flash { animation: spFlash .25s ease; }
+
+    /* Pénz animáció */
+    .money-float {
+      position: fixed;
+      font-size: 1.1rem;
+      font-weight: 900;
+      pointer-events: none;
+      z-index: 9999;
+      animation: moneyFloat 1.2s ease forwards;
+    }
+    @keyframes moneyFloat {
+      0%   { opacity:1; transform: translateY(0) scale(1); }
+      100% { opacity:0; transform: translateY(-60px) scale(1.3); }
+    }
+
+    /* Kocka bounce */
+    @keyframes dieBounce {
+      0%   { transform: scale(1) rotate(0deg); }
+      25%  { transform: scale(1.3) rotate(-20deg); }
+      50%  { transform: scale(0.9) rotate(15deg); }
+      75%  { transform: scale(1.1) rotate(-5deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .die.bounce-anim { animation: dieBounce .5s ease forwards; }
   </style>
 </head>
 <body>
@@ -484,11 +527,24 @@ function joinRoom(roomId,oppName,myIdx){
   roomUnsub=db.collection('mono_rooms').doc(roomId).onSnapshot(snap=>{
     const room=snap.data();
     if(!room)return;
+
+    // Bábu animáció: ha pozíció változott
+    const prevPlayers = localPlayers;
     localPlayers=room.players;
     localOwned=room.owned||{};
     localCur=room.cur;
     localLastRoll=room.lastRoll||[1,1];
+
+    // Ellenőrizzük változott-e pozíció
+    room.players.forEach((p,i)=>{
+      if(prevPlayers[i] && prevPlayers[i].pos !== p.pos && !p.bankrupt){
+        animateMove(i, prevPlayers[i].pos, p.pos, p.color, ()=>renderAll(room));
+        return;
+      }
+    });
+
     renderAll(room);
+
     if(room.status==='finished'&&room.winner!==null){
       showWin(room.players[room.winner]);
     }
@@ -615,8 +671,11 @@ async function rollDice(){
 
   const d1e=document.getElementById('die1'),d2e=document.getElementById('die2');
   d1e.classList.add('roll-anim');d2e.classList.add('roll-anim');
+  playSound('dice');
   await new Promise(r=>setTimeout(r,400));
   d1e.classList.remove('roll-anim');d2e.classList.remove('roll-anim');
+  d1e.classList.add('bounce-anim');d2e.classList.add('bounce-anim');
+  setTimeout(()=>{d1e.classList.remove('bounce-anim');d2e.classList.remove('bounce-anim');},500);
 
   const p=room.players[myPlayerIdx];
   const d1=r1(),d2=r1();
@@ -725,16 +784,20 @@ function handlePendingAction(action,room){
     resolveEndTurn(room);return;
   }
   if(action.type==='gotojail'){
+    playSound('jail');
     showM('👮 Börtönbe kerültél!',p.name+' bekerült a börtönbe!\n3 körön belül kell kiszabadulni.',null,[
       {t:'OK',c:'mb-ok',fn(){closeM();applyGotojail(room,pidx);}}
     ]);return;
   }
   if(action.type==='tax'){
+    playSound('rent');
+    floatMoney(-action.amount, p.color);
     showM('💸 '+SPACES[action.spaceId].name,p.name+' adót fizet.',action.amount.toLocaleString()+' Ft',[
       {t:'OK',c:'mb-ok',fn(){closeM();applyTax(room,pidx,action.amount);}}
     ]);return;
   }
   if(action.type==='chance'){
+    playSound('chance');
     const c=action.card;
     showM('❓ Véletlen kártya',c.text,null,[
       {t:'OK',c:'mb-ok',fn(){closeM();applyChance(room,pidx,c);}}
@@ -745,11 +808,17 @@ function handlePendingAction(action,room){
     const btns=[
       {t:'❌ Kihagyom',c:'mb-skip',fn(){closeM();resolveEndTurn(room);}},
     ];
-    if(canBuy) btns.unshift({t:'✅ Megveszem',c:'mb-buy',fn(){closeM();applyBuy(room,pidx,action.spaceId);}});
+    if(canBuy) btns.unshift({t:'✅ Megveszem',c:'mb-buy',fn(){
+      playSound('buy');
+      floatMoney(-sp.price, p.color);
+      closeM();applyBuy(room,pidx,action.spaceId);
+    }});
     showM(sp.icon+' '+sp.name,'Megveszed?\nBérleti díj: '+(sp.utility?'dobás×4':sp.rent.toLocaleString()+' Ft'),sp.price.toLocaleString()+' Ft',btns);
     return;
   }
   if(action.type==='payRent'){
+    playSound('rent');
+    floatMoney(-action.amount, p.color);
     const owner=room.players[action.to];
     showM('🏠 Bérleti díj',p.name+' fizet '+owner.name+'-nak\n('+SPACES[action.spaceId].name+')',action.amount.toLocaleString()+' Ft',[
       {t:'OK',c:'mb-ok',fn(){closeM();applyRent(room,pidx,action.to,action.amount);}}
@@ -862,6 +931,193 @@ function addLog(msg){
   a.scrollTop=a.scrollHeight;
 }
 
+// ── HANGOK (Web Audio API) ──
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    const now = ctx.currentTime;
+
+    if (type === 'step') {
+      // Lépés: rövid tick
+      o.type = 'square';
+      o.frequency.setValueAtTime(600, now);
+      o.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+      g.gain.setValueAtTime(0.08, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      o.start(now); o.stop(now + 0.08);
+    } else if (type === 'dice') {
+      // Kockadobás: rattle
+      for (let i = 0; i < 4; i++) {
+        const oi = ctx.createOscillator();
+        const gi = ctx.createGain();
+        oi.connect(gi); gi.connect(ctx.destination);
+        const t = now + i * 0.07;
+        oi.type = 'sawtooth';
+        oi.frequency.setValueAtTime(200 + Math.random() * 300, t);
+        gi.gain.setValueAtTime(0.06, t);
+        gi.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        oi.start(t); oi.stop(t + 0.06);
+      }
+      return;
+    } else if (type === 'buy') {
+      // Vásárlás: vidám felcsendülés
+      [523, 659, 784].forEach((freq, i) => {
+        const oi = ctx.createOscillator();
+        const gi = ctx.createGain();
+        oi.connect(gi); gi.connect(ctx.destination);
+        const t = now + i * 0.1;
+        oi.type = 'sine';
+        oi.frequency.setValueAtTime(freq, t);
+        gi.gain.setValueAtTime(0.12, t);
+        gi.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        oi.start(t); oi.stop(t + 0.15);
+      });
+      return;
+    } else if (type === 'rent') {
+      // Bérleti díj: lefelé
+      o.type = 'sine';
+      o.frequency.setValueAtTime(400, now);
+      o.frequency.exponentialRampToValueAtTime(200, now + 0.25);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      o.start(now); o.stop(now + 0.25);
+    } else if (type === 'jail') {
+      // Börtön: drámai
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(150, now);
+      o.frequency.setValueAtTime(100, now + 0.15);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o.start(now); o.stop(now + 0.35);
+    } else if (type === 'money') {
+      // Pénz kapás: csilingelés
+      [1047, 1319].forEach((freq, i) => {
+        const oi = ctx.createOscillator();
+        const gi = ctx.createGain();
+        oi.connect(gi); gi.connect(ctx.destination);
+        const t = now + i * 0.08;
+        oi.type = 'sine';
+        oi.frequency.setValueAtTime(freq, t);
+        gi.gain.setValueAtTime(0.1, t);
+        gi.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        oi.start(t); oi.stop(t + 0.2);
+      });
+      return;
+    } else if (type === 'win') {
+      // Győzelem fanfár
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const oi = ctx.createOscillator();
+        const gi = ctx.createGain();
+        oi.connect(gi); gi.connect(ctx.destination);
+        const t = now + i * 0.13;
+        oi.type = 'square';
+        oi.frequency.setValueAtTime(freq, t);
+        gi.gain.setValueAtTime(0.1, t);
+        gi.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        oi.start(t); oi.stop(t + 0.2);
+      });
+      return;
+    } else if (type === 'chance') {
+      // Véletlen kártya: misztikus
+      o.type = 'sine';
+      o.frequency.setValueAtTime(800, now);
+      o.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+      o.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o.start(now); o.stop(now + 0.35);
+    }
+  } catch(e) {}
+}
+
+// ── BÁBU LÉPTETÉS ANIMÁCIÓ ──
+function animateMove(pidx, fromPos, toPos, color, callback) {
+  const total = SPACES.length;
+  // Kiszámoljuk a lépések sorrendjét
+  const steps = [];
+  let pos = fromPos;
+  while (pos !== toPos) {
+    pos = (pos + 1) % total;
+    steps.push(pos);
+  }
+
+  let stepIdx = 0;
+  function doStep() {
+    if (stepIdx >= steps.length) {
+      // Utolsó lépés: bounce
+      const finalEl = document.getElementById('sp-' + toPos);
+      if (finalEl) {
+        finalEl.classList.add('flash');
+        setTimeout(() => finalEl.classList.remove('flash'), 300);
+      }
+      // Token bounce
+      const spot = document.getElementById('tok-' + toPos);
+      if (spot) {
+        const tk = spot.querySelector('.stk[data-pid="' + pidx + '"]');
+        if (tk) { tk.classList.add('bounce'); setTimeout(() => tk.classList.remove('bounce'), 400); }
+      }
+      if (callback) callback();
+      return;
+    }
+
+    const curPos = steps[stepIdx];
+    playSound('step');
+
+    // Rövid villanás az aktuális mezőn
+    const spEl = document.getElementById('sp-' + curPos);
+    if (spEl) { spEl.classList.add('flash'); setTimeout(() => spEl.classList.remove('flash'), 200); }
+
+    // Token mozgatása
+    // Eltávolít előző helyről
+    const prevPos = stepIdx === 0 ? fromPos : steps[stepIdx - 1];
+    const prevSpot = document.getElementById('tok-' + prevPos);
+    if (prevSpot) {
+      const tk = prevSpot.querySelector('.stk[data-pid="' + pidx + '"]');
+      if (tk) tk.remove();
+    }
+    // Hozzáad új helyre
+    const newSpot = document.getElementById('tok-' + curPos);
+    if (newSpot) {
+      const t = document.createElement('div');
+      t.className = 'stk step';
+      t.style.background = color;
+      t.dataset.pid = pidx;
+      setTimeout(() => t.classList.remove('step'), 200);
+      newSpot.appendChild(t);
+    }
+
+    stepIdx++;
+    const delay = steps.length > 6 ? 80 : 140; // gyorsabb ha sok lépés
+    setTimeout(doStep, delay);
+  }
+
+  doStep();
+}
+
+// ── PÉNZ FLOAT ANIMÁCIÓ ──
+function floatMoney(amount, color) {
+  const el = document.createElement('div');
+  el.className = 'money-float';
+  el.textContent = (amount > 0 ? '+' : '') + amount.toLocaleString() + ' Ft';
+  el.style.color = amount > 0 ? '#5cfc8e' : '#fc5c5c';
+  // Pozíció: players-bar közelében
+  const bar = document.getElementById('players-bar');
+  const rect = bar ? bar.getBoundingClientRect() : { left: window.innerWidth/2, top: 100 };
+  el.style.left = (rect.left + Math.random() * 100 + 50) + 'px';
+  el.style.top  = (rect.top + rect.height) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
 function r1(){return Math.ceil(Math.random()*6);}
 
 function showM(title,body,price,btns){
@@ -880,6 +1136,7 @@ function showM(title,body,price,btns){
 function closeM(){document.getElementById('modal').classList.remove('show');}
 
 function showWin(p){
+  playSound('win');
   document.getElementById('w-title').textContent=p.name+' nyert! 🎉';
   document.getElementById('w-sub').textContent='Gratulálok '+p.name+'! Ellenfeledet tönkretettél.';
   document.getElementById('win-screen').classList.add('show');
