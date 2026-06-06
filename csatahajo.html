@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Online Játékok – Csatahajó</title>
+  <link rel="stylesheet" href="style.css?v=9"/>
+  <style>
+    .site-header{display:none;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#0a0d1a;color:#e8e8f5;font-family:'Segoe UI',sans-serif;min-height:100vh;}
+
+    #hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+      background:rgba(10,13,26,.97);border-bottom:1px solid #2e2e5e;position:sticky;top:0;z-index:50;}
+    #hdr a{color:#8888aa;font-size:.82rem;text-decoration:none;}
+    #phase-label{font-size:.88rem;font-weight:800;color:#5c9efc;}
+
+    /* GRIDS */
+    #game-area{display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:16px;}
+    .grid-section{display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .grid-title{font-size:.82rem;font-weight:800;color:#8888aa;text-transform:uppercase;letter-spacing:.05em;}
+
+    .grid-wrap{position:relative;}
+    .battle-grid{display:grid;border:2px solid #2e2e5e;border-radius:8px;overflow:hidden;cursor:pointer;}
+    .cell{
+      width:32px;height:32px;border:1px solid #1a2a4e;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.9rem;transition:background .1s;position:relative;
+    }
+    .cell.water{background:#0a1828;}
+    .cell.ship{background:#2a4a6e;}
+    .cell.ship-place{background:#1a3a5e;cursor:pointer;}
+    .cell.ship-place:hover{background:#2a5a8e;}
+    .cell.hit{background:#8e2a2a;}
+    .cell.miss{background:#0d1e35;}
+    .cell.sunk{background:#cc3333;}
+    .cell.preview-ok{background:#1a5a3e;}
+    .cell.preview-bad{background:#5a1a1a;}
+
+    /* Hit / miss marks */
+    .cell.hit::after{content:'✕';color:#ff6666;font-weight:900;font-size:1.1rem;}
+    .cell.miss::after{content:'•';color:#5580aa;font-size:1.4rem;}
+    .cell.sunk::after{content:'✕';color:#ff4444;font-weight:900;font-size:1.1rem;}
+
+    /* SHIP SELECTOR */
+    #ship-panel{background:#12122a;border:1px solid #2e2e5e;border-radius:14px;padding:14px;max-width:400px;width:100%;}
+    #ship-panel h3{font-size:.82rem;color:#8888aa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+    .ship-list{display:flex;flex-direction:column;gap:6px;}
+    .ship-item{
+      display:flex;align-items:center;gap:10px;padding:8px 12px;
+      background:#1a1a35;border:2px solid transparent;border-radius:10px;
+      cursor:pointer;transition:all .15s;
+    }
+    .ship-item:hover:not(.placed){border-color:#5c9efc;}
+    .ship-item.selected{border-color:#7c5cfc;background:rgba(124,92,252,.15);}
+    .ship-item.placed{opacity:.4;cursor:default;}
+    .ship-blocks{display:flex;gap:2px;}
+    .ship-block{width:18px;height:18px;background:#2a5a8e;border-radius:3px;}
+    .ship-name{flex:1;font-size:.82rem;font-weight:700;}
+    .ship-count{font-size:.72rem;color:#8888aa;}
+
+    /* CONTROLS */
+    #controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:400px;width:100%;}
+    .ctrl-btn{
+      padding:9px 18px;border-radius:10px;border:none;font-size:.85rem;font-weight:800;
+      cursor:pointer;font-family:inherit;transition:all .2s;
+    }
+    .ctrl-primary{background:linear-gradient(135deg,#7c5cfc,#c45cfc);color:#fff;}
+    .ctrl-secondary{background:rgba(255,255,255,.08);color:#8888aa;border:1px solid #2e2e5e;}
+    .ctrl-danger{background:rgba(255,60,60,.15);color:#ff6666;border:1px solid #ff444433;}
+    .ctrl-btn:hover{transform:translateY(-1px);}
+    .ctrl-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+    /* BOTH GRIDS BATTLE */
+    #battle-area{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-start;}
+
+    /* STATUS */
+    #status-bar{
+      background:#12122a;border:1px solid #2e2e5e;border-radius:12px;
+      padding:10px 16px;text-align:center;max-width:400px;width:100%;
+      font-size:.88rem;font-weight:700;
+    }
+    #turn-indicator{font-size:1rem;font-weight:900;margin-bottom:4px;}
+    #ships-status{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;}
+    .ss-item{font-size:.75rem;color:#8888aa;}
+    .ss-item span{color:#e8e8f5;font-weight:700;}
+
+    /* AI thinking */
+    .thinking{animation:th .6s ease infinite;}
+    @keyframes th{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* WIN overlay */
+    #win-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;
+      align-items:center;justify-content:center;}
+    #win-overlay.show{display:flex;}
+    .win-box{background:#12122a;border:2px solid #7c5cfc;border-radius:20px;
+      padding:36px 28px;text-align:center;max-width:340px;width:92%;}
+    .win-box .wi{font-size:4rem;margin-bottom:10px;}
+    .win-box h2{font-size:1.6rem;font-weight:900;margin-bottom:8px;}
+    .win-box p{color:#8888aa;margin-bottom:20px;font-size:.88rem;}
+    .win-stats{display:flex;gap:20px;justify-content:center;margin-bottom:18px;}
+    .ws-item{text-align:center;}
+    .ws-val{font-size:1.8rem;font-weight:900;color:#7c5cfc;}
+    .ws-lbl{font-size:.7rem;color:#8888aa;}
+
+    /* Mobile */
+    @media(max-width:500px){
+      .cell{width:28px;height:28px;font-size:.8rem;}
+    }
+
+    /* Toast */
+    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:#1a1a35;border:1px solid #7c5cfc;border-radius:10px;
+      padding:10px 20px;font-size:.85rem;font-weight:700;z-index:9999;
+      animation:ti .3s ease;pointer-events:none;}
+    @keyframes ti{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  </style>
+</head>
+<body>
+
+<div id="hdr">
+  <a href="index.html">← Főoldal</a>
+  <span id="phase-label">⚓ Csatahajó</span>
+  <span id="shot-count" style="font-size:.8rem;color:#8888aa;"></span>
+</div>
+
+<div id="game-area">
+  <!-- PLACEMENT PHASE -->
+  <div id="placement-phase">
+    <div class="grid-section">
+      <div class="grid-title">A te flottád — helyezd el a hajókat!</div>
+      <div class="grid-wrap">
+        <div class="battle-grid" id="player-place-grid"></div>
+      </div>
+    </div>
+
+    <div id="ship-panel">
+      <h3>Hajók</h3>
+      <div class="ship-list" id="ship-list"></div>
+    </div>
+
+    <div id="controls">
+      <button class="ctrl-btn ctrl-secondary" onclick="rotateShip()">🔄 Forgatás</button>
+      <button class="ctrl-btn ctrl-secondary" onclick="autoPlace()">🎲 Automatikus</button>
+      <button class="ctrl-btn ctrl-primary" id="start-battle-btn" onclick="startBattle()" disabled>⚔️ Csata!</button>
+    </div>
+  </div>
+
+  <!-- BATTLE PHASE -->
+  <div id="battle-phase" style="display:none;">
+    <div id="status-bar">
+      <div id="turn-indicator">A te köröd — lőj!</div>
+      <div id="ships-status"></div>
+    </div>
+
+    <div id="battle-area">
+      <div class="grid-section">
+        <div class="grid-title">Ellenség vizei</div>
+        <div class="battle-grid" id="enemy-grid"></div>
+      </div>
+      <div class="grid-section">
+        <div class="grid-title">A te flottád</div>
+        <div class="battle-grid" id="player-battle-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="win-overlay">
+  <div class="win-box">
+    <div class="wi" id="win-icon">🏆</div>
+    <h2 id="win-title">Nyertél!</h2>
+    <p id="win-sub"></p>
+    <div class="win-stats">
+      <div class="ws-item"><div class="ws-val" id="ws-shots">0</div><div class="ws-lbl">lövés</div></div>
+      <div class="ws-item"><div class="ws-val" id="ws-hits">0</div><div class="ws-lbl">találat</div></div>
+      <div class="ws-item"><div class="ws-val" id="ws-acc">0%</div><div class="ws-lbl">pontosság</div></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="ctrl-btn ctrl-primary" onclick="resetGame()">🔄 Új játék</button>
+      <button class="ctrl-btn ctrl-secondary" onclick="location.href='index.html'">🏠 Főoldal</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
+<script>
+const SESSION_KEY='doorpuzzle_session';
+const username=localStorage.getItem(SESSION_KEY)||'Játékos';
+if(typeof db!=='undefined'){
+  db.collection('presence').doc(username).set({name:username,online:true,where:'csatahajó',since:Date.now()}).catch(()=>{});
+  window.addEventListener('beforeunload',()=>db.collection('presence').doc(username).delete().catch(()=>{}));
+}
+
+const GRID=10;
+const SHIPS=[
+  {name:'Anyahajó',   size:4, count:1, icon:'🚢'},
+  {name:'Cirkáló',    size:3, count:2, icon:'⛵'},
+  {name:'Romboló',    size:2, count:3, icon:'🛥️'},
+  {name:'Tengeralatt.',size:1,count:4, icon:'🔱'},
+];
+
+// ── STATE ──
+let playerBoard=[], enemyBoard=[];     // 'empty'|'ship'|'hit'|'miss'|'sunk'
+let playerShips=[], enemyShips=[];     // [{cells:[{r,c}], sunk:false}]
+let placedShips=[];                    // aktuális elhelyezési állapot
+let selectedShip=null;                 // {shipIdx, instanceIdx}
+let isHorizontal=true;
+let playerTurn=true;
+let gameActive=false;
+let shots=0, hits=0;
+// AI hunt mode
+let aiHits=[], aiTargets=[];
+
+// ── INIT ──
+function initBoards(){
+  playerBoard=Array.from({length:GRID},()=>Array(GRID).fill('empty'));
+  enemyBoard=Array.from({length:GRID},()=>Array(GRID).fill('empty'));
+  playerShips=[];enemyShips=[];
+  placedShips=[];selectedShip=null;isHorizontal=true;
+  shots=0;hits=0;aiHits=[];aiTargets=[];
+  playerTurn=true;gameActive=false;
+}
+
+function resetGame(){
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('battle-phase').style.display='none';
+  document.getElementById('placement-phase').style.display='block';
+  document.getElementById('phase-label').textContent='⚓ Csatahajó';
+  initBoards();
+  buildPlacementGrid();
+  buildShipList();
+  document.getElementById('start-battle-btn').disabled=true;
+}
+
+// ── PLACEMENT GRID ──
+function buildPlacementGrid(){
+  const grid=document.getElementById('player-place-grid');
+  grid.style.gridTemplateColumns=`repeat(${GRID},32px)`;
+  grid.innerHTML='';
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const cell=document.createElement('div');
+      cell.className='cell water';
+      cell.dataset.r=r;cell.dataset.c=c;
+      cell.addEventListener('click',()=>placeShipAt(r,c));
+      cell.addEventListener('mouseenter',()=>showPreview(r,c));
+      cell.addEventListener('mouseleave',()=>clearPreview());
+      grid.appendChild(cell);
+    }
+  }
+  refreshPlacementGrid();
+}
+
+function getPlacementCell(r,c){
+  return document.querySelector(`#player-place-grid .cell[data-r="${r}"][data-c="${c}"]`);
+}
+
+function refreshPlacementGrid(){
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const el=getPlacementCell(r,c);
+      if(!el)continue;
+      el.className='cell '+(playerBoard[r][c]==='ship'?'ship':'water');
+    }
+  }
+}
+
+function showPreview(r,c){
+  if(!selectedShip)return;
+  const ship=SHIPS[selectedShip.shipIdx];
+  clearPreview();
+  const cells=getShipCells(r,c,ship.size,isHorizontal);
+  const ok=canPlace(cells,playerBoard);
+  cells.forEach(({r:sr,c:sc})=>{
+    const el=getPlacementCell(sr,sc);
+    if(el) el.classList.add(ok?'preview-ok':'preview-bad');
+  });
+}
+
+function clearPreview(){
+  document.querySelectorAll('#player-place-grid .cell').forEach(el=>{
+    el.classList.remove('preview-ok','preview-bad');
+  });
+}
+
+function getShipCells(r,c,size,horiz){
+  const cells=[];
+  for(let i=0;i<size;i++){
+    cells.push(horiz?{r,c:c+i}:{r:r+i,c});
+  }
+  return cells;
+}
+
+function canPlace(cells,board){
+  for(const {r,c} of cells){
+    if(r<0||r>=GRID||c<0||c>=GRID)return false;
+    if(board[r][c]==='ship')return false;
+    // szomszéd check
+    for(let dr=-1;dr<=1;dr++){
+      for(let dc=-1;dc<=1;dc++){
+        const nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<GRID&&nc>=0&&nc<GRID&&board[nr][nc]==='ship')return false;
+      }
+    }
+  }
+  return true;
+}
+
+function placeShipAt(r,c){
+  if(!selectedShip)return;
+  const ship=SHIPS[selectedShip.shipIdx];
+  const cells=getShipCells(r,c,ship.size,isHorizontal);
+  if(!canPlace(cells,playerBoard))return;
+
+  cells.forEach(({r:sr,c:sc})=>playerBoard[sr][sc]='ship');
+  playerShips.push({cells,sunk:false,shipIdx:selectedShip.shipIdx});
+  placedShips.push({shipIdx:selectedShip.shipIdx,instance:selectedShip.instanceIdx});
+
+  // következő hajó kijelölése
+  selectNextShip();
+  clearPreview();
+  refreshPlacementGrid();
+  checkAllPlaced();
+}
+
+function selectNextShip(){
+  selectedShip=null;
+  for(let i=0;i<SHIPS.length;i++){
+    const placed=placedShips.filter(p=>p.shipIdx===i).length;
+    if(placed<SHIPS[i].count){
+      selectedShip={shipIdx:i,instanceIdx:placed};
+      break;
+    }
+  }
+  highlightSelectedShip();
+}
+
+function highlightSelectedShip(){
+  document.querySelectorAll('.ship-item').forEach((el,i)=>{
+    el.classList.remove('selected');
+  });
+  if(!selectedShip)return;
+  const items=document.querySelectorAll('.ship-item');
+  let idx=0;
+  for(let i=0;i<SHIPS.length;i++){
+    for(let j=0;j<SHIPS[i].count;j++){
+      if(i===selectedShip.shipIdx&&j===selectedShip.instanceIdx){
+        if(items[idx]) items[idx].classList.add('selected');
+      }
+      idx++;
+    }
+  }
+}
+
+function checkAllPlaced(){
+  const total=SHIPS.reduce((s,sh)=>s+sh.count,0);
+  const done=placedShips.length>=total;
+  document.getElementById('start-battle-btn').disabled=!done;
+  buildShipList();
+}
+
+function buildShipList(){
+  const list=document.getElementById('ship-list');
+  list.innerHTML='';
+  let idx=0;
+  SHIPS.forEach((ship,si)=>{
+    for(let j=0;j<ship.count;j++){
+      const placed=placedShips.filter(p=>p.shipIdx===si).length;
+      const isPlaced=j<placed;
+      const isSelected=selectedShip&&selectedShip.shipIdx===si&&selectedShip.instanceIdx===j;
+      const item=document.createElement('div');
+      item.className='ship-item'+(isPlaced?' placed':isSelected?' selected':'');
+      const blocks=Array.from({length:ship.size},()=>'<div class="ship-block"></div>').join('');
+      item.innerHTML=`<div class="ship-blocks">${blocks}</div><span class="ship-name">${ship.icon} ${ship.name}</span><span class="ship-count">${ship.size} mező</span>`;
+      if(!isPlaced){
+        item.onclick=()=>{selectedShip={shipIdx:si,instanceIdx:j};highlightSelectedShip();};
+      }
+      list.appendChild(item);
+      idx++;
+    }
+  });
+}
+
+function rotateShip(){
+  isHorizontal=!isHorizontal;
+  showToast(isHorizontal?'↔ Vízszintes':'↕ Függőleges');
+}
+
+function autoPlace(){
+  // Reset
+  playerBoard=Array.from({length:GRID},()=>Array(GRID).fill('empty'));
+  playerShips=[];placedShips=[];
+  SHIPS.forEach((ship,si)=>{
+    for(let j=0;j<ship.count;j++){
+      let placed=false;
+      for(let attempt=0;attempt<200&&!placed;attempt++){
+        const horiz=Math.random()>.5;
+        const r=Math.floor(Math.random()*GRID);
+        const c=Math.floor(Math.random()*GRID);
+        const cells=getShipCells(r,c,ship.size,horiz);
+        if(canPlace(cells,playerBoard)){
+          cells.forEach(({r:sr,c:sc})=>playerBoard[sr][sc]='ship');
+          playerShips.push({cells,sunk:false,shipIdx:si});
+          placedShips.push({shipIdx:si,instance:j});
+          placed=true;
+        }
+      }
+    }
+  });
+  selectedShip=null;
+  refreshPlacementGrid();
+  buildShipList();
+  document.getElementById('start-battle-btn').disabled=false;
+}
+
+// ── BATTLE ──
+function startBattle(){
+  // AI elhelyezés
+  enemyBoard=Array.from({length:GRID},()=>Array(GRID).fill('empty'));
+  enemyShips=[];
+  SHIPS.forEach((ship,si)=>{
+    for(let j=0;j<ship.count;j++){
+      let placed=false;
+      for(let attempt=0;attempt<200&&!placed;attempt++){
+        const horiz=Math.random()>.5;
+        const r=Math.floor(Math.random()*GRID);
+        const c=Math.floor(Math.random()*GRID);
+        const cells=getShipCells(r,c,ship.size,horiz);
+        if(canPlace(cells,enemyBoard)){
+          cells.forEach(({r:sr,c:sc})=>enemyBoard[sr][sc]='ship');
+          enemyShips.push({cells,sunk:false,shipIdx:si});
+          placed=true;
+        }
+      }
+    }
+  });
+
+  gameActive=true;
+  document.getElementById('placement-phase').style.display='none';
+  document.getElementById('battle-phase').style.display='block';
+  document.getElementById('phase-label').textContent='⚔️ Csata';
+  buildBattleGrids();
+  updateStatus();
+}
+
+function buildBattleGrids(){
+  buildGrid('enemy-grid', false);
+  buildGrid('player-battle-grid', true);
+}
+
+function buildGrid(id, isPlayer){
+  const grid=document.getElementById(id);
+  grid.style.gridTemplateColumns=`repeat(${GRID},32px)`;
+  grid.innerHTML='';
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const cell=document.createElement('div');
+      cell.className='cell water';
+      cell.dataset.r=r;cell.dataset.c=c;
+      if(!isPlayer){
+        cell.addEventListener('click',()=>playerShoot(r,c));
+      }
+      grid.appendChild(cell);
+    }
+  }
+  refreshBattleGrid(id,isPlayer);
+}
+
+function getBattleCell(gridId,r,c){
+  return document.querySelector(`#${gridId} .cell[data-r="${r}"][data-c="${c}"]`);
+}
+
+function refreshBattleGrid(gridId,isPlayer){
+  const board=isPlayer?playerBoard:enemyBoard;
+  // Track what player has shot (enemy grid only shows shots)
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const el=getBattleCell(gridId,r,c);
+      if(!el)continue;
+      const v=board[r][c];
+      if(isPlayer){
+        // Show own ships + enemy hits
+        if(v==='ship')el.className='cell ship';
+        else if(v==='hit')el.className='cell hit';
+        else if(v==='sunk')el.className='cell sunk';
+        else if(v==='miss')el.className='cell miss';
+        else el.className='cell water';
+      } else {
+        // Fog of war — only show shots
+        if(v==='hit')el.className='cell hit';
+        else if(v==='sunk')el.className='cell sunk';
+        else if(v==='miss')el.className='cell miss';
+        else el.className='cell water';
+      }
+    }
+  }
+}
+
+function playerShoot(r,c){
+  if(!gameActive||!playerTurn)return;
+  const v=enemyBoard[r][c];
+  if(v==='hit'||v==='miss'||v==='sunk')return;
+
+  shots++;
+  document.getElementById('shot-count').textContent=shots+' lövés';
+
+  if(v==='ship'){
+    hits++;
+    enemyBoard[r][c]='hit';
+    playSound('hit');
+    // Elsüllyedt?
+    const ship=enemyShips.find(s=>s.cells.some(cc=>cc.r===r&&cc.c===c));
+    if(ship&&ship.cells.every(cc=>enemyBoard[cc.r][cc.c]==='hit')){
+      ship.sunk=true;
+      ship.cells.forEach(cc=>enemyBoard[cc.r][cc.c]='sunk');
+      playSound('sunk');
+      showToast('💥 Elsüllyedt!');
+    }
+  } else {
+    enemyBoard[r][c]='miss';
+    playSound('splash');
+  }
+
+  refreshBattleGrid('enemy-grid',false);
+
+  if(checkWin(enemyShips)){endGame(true);return;}
+
+  playerTurn=false;
+  updateStatus();
+  setTimeout(()=>aiShoot(),900);
+}
+
+function aiShoot(){
+  if(!gameActive)return;
+  let r,c;
+
+  if(aiTargets.length>0){
+    // Hunt mode
+    const t=aiTargets.shift();
+    r=t.r;c=t.c;
+  } else {
+    // Random
+    const empty=[];
+    for(let row=0;row<GRID;row++){
+      for(let col=0;col<GRID;col++){
+        if(playerBoard[row][col]==='empty'||playerBoard[row][col]==='ship') empty.push({r:row,c:col});
+      }
+    }
+    if(!empty.length){endGame(false);return;}
+    const pick=empty[Math.floor(Math.random()*empty.length)];
+    r=pick.r;c=pick.c;
+  }
+
+  const v=playerBoard[r][c];
+  if(v==='ship'){
+    playerBoard[r][c]='hit';
+    playSound('hit');
+    aiHits.push({r,c});
+    // Add adjacent targets
+    [{r:r-1,c},{r:r+1,c},{r,c:c-1},{r,c:c+1}].forEach(n=>{
+      if(n.r>=0&&n.r<GRID&&n.c>=0&&n.c<GRID){
+        const nv=playerBoard[n.r][n.c];
+        if(nv==='empty'||nv==='ship'){
+          if(!aiTargets.some(t=>t.r===n.r&&t.c===n.c)) aiTargets.push(n);
+        }
+      }
+    });
+    const ship=playerShips.find(s=>s.cells.some(cc=>cc.r===r&&cc.c===c));
+    if(ship&&ship.cells.every(cc=>playerBoard[cc.r][cc.c]==='hit')){
+      ship.sunk=true;
+      ship.cells.forEach(cc=>playerBoard[cc.r][cc.c]='sunk');
+      aiTargets=[];aiHits=[];
+      playSound('sunk');
+    }
+  } else if(v==='empty'){
+    playerBoard[r][c]='miss';
+    playSound('splash');
+  }
+
+  refreshBattleGrid('player-battle-grid',true);
+
+  if(checkWin(playerShips)){endGame(false);return;}
+
+  playerTurn=true;
+  updateStatus();
+}
+
+function checkWin(ships){return ships.every(s=>s.sunk);}
+
+function updateStatus(){
+  const ti=document.getElementById('turn-indicator');
+  if(playerTurn){
+    ti.textContent='🎯 A te köröd — lőj!';
+    ti.style.color='#5cfc8e';
+    ti.classList.remove('thinking');
+  } else {
+    ti.textContent='🤖 AI gondolkodik...';
+    ti.style.color='#fc9e5c';
+    ti.classList.add('thinking');
+  }
+
+  // Ships status
+  const myLeft=playerShips.filter(s=>!s.sunk).length;
+  const eneLeft=enemyShips.filter(s=>!s.sunk).length;
+  document.getElementById('ships-status').innerHTML=
+    `<div class="ss-item">Te: <span>${myLeft}</span> hajó</div>
+     <div class="ss-item">AI: <span>${eneLeft}</span> hajó</div>
+     <div class="ss-item">Találat: <span>${hits}</span></div>`;
+}
+
+function endGame(won){
+  gameActive=false;
+  const acc=shots>0?Math.round(hits/shots*100):0;
+  document.getElementById('win-icon').textContent=won?'🏆':'💀';
+  document.getElementById('win-title').textContent=won?'Győzelem!':'Vereség!';
+  document.getElementById('win-sub').textContent=won
+    ?'Elsüllyesztetted az ellenség egész flottáját!'
+    :'Az ellenség elsüllyesztette az összes hajódat!';
+  document.getElementById('ws-shots').textContent=shots;
+  document.getElementById('ws-hits').textContent=hits;
+  document.getElementById('ws-acc').textContent=acc+'%';
+  document.getElementById('win-overlay').classList.add('show');
+  if(won)launchConfetti();
+
+  // Save best
+  if(won&&typeof db!=='undefined'){
+    db.collection('users').doc(username).update({seaBattleWins:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+  }
+}
+
+// ── SOUNDS ──
+let ac2=null;
+function getAC2(){if(!ac2)ac2=new(window.AudioContext||window.webkitAudioContext)();return ac2;}
+function playSound(type){
+  try{
+    const ctx=getAC2();const n=ctx.currentTime;
+    if(type==='splash'){
+      const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+      o.type='sine';o.frequency.setValueAtTime(300,n);o.frequency.exponentialRampToValueAtTime(100,n+.3);
+      g.gain.setValueAtTime(.08,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.start(n);o.stop(n+.3);
+    } else if(type==='hit'){
+      const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+      o.type='sawtooth';o.frequency.setValueAtTime(200,n);o.frequency.exponentialRampToValueAtTime(80,n+.25);
+      g.gain.setValueAtTime(.12,n);g.gain.exponentialRampToValueAtTime(.001,n+.25);o.start(n);o.stop(n+.25);
+    } else if(type==='sunk'){
+      [150,120,100].forEach((f,i)=>{
+        const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+        const t=n+i*.12;o.type='sawtooth';o.frequency.setValueAtTime(f,t);
+        g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.start(t);o.stop(t+.2);
+      });
+    }
+  }catch(e){}
+}
+
+// ── CONFETTI ──
+function launchConfetti(){
+  const colors=['#7c5cfc','#5cfc8e','#f5c842','#fc5c5c','#5c9efc'];
+  for(let i=0;i<50;i++){
+    setTimeout(()=>{
+      const el=document.createElement('div');
+      const sz=6+Math.random()*8;
+      el.style.cssText=`position:fixed;top:-10px;left:${Math.random()*100}vw;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};z-index:9999;pointer-events:none;animation:cfF ${1.2+Math.random()*1}s linear forwards;`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),2500);
+    },i*40);
+  }
+}
+const cfStyle=document.createElement('style');
+cfStyle.textContent='@keyframes cfF{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}';
+document.head.appendChild(cfStyle);
+
+// ── TOAST ──
+function showToast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),1800);
+}
+
+// ── START ──
+initBoards();
+buildPlacementGrid();
+buildShipList();
+// Select first ship
+selectedShip={shipIdx:0,instanceIdx:0};
+highlightSelectedShip();
+</script>
+</body>
+</html>
